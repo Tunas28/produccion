@@ -1,0 +1,77 @@
+# ============================================================
+# EXPRESIONES DE VALIDACIÓN - AppSheets
+# Tabla: PRODUCCION
+# ============================================================
+
+validaciones:
+
+  # ----------------------------------------------------------
+  # CHASIS: debe ser único en toda la tabla
+  # ----------------------------------------------------------
+  chasis_unico:
+    columna: "CHASIS"
+    tipo: "Valid_if"
+    expresion: >
+      NOT(
+        IN([CHASIS],
+          SELECT(Produccion[CHASIS],
+            AND([_THISROW_BEFORE] <> [_THISROW], [CHASIS] <> "")
+          )
+        )
+      )
+    mensaje_error: "⚠ Este número de chasis ya existe en el sistema."
+
+  # ----------------------------------------------------------
+  # NUM. MOTOR: debe ser único en toda la tabla
+  # ----------------------------------------------------------
+  motor_unico:
+    columna: "NUM. MOTOR"
+    tipo: "Valid_if"
+    expresion: >
+      NOT(
+        IN([NUM. MOTOR],
+          SELECT(Produccion[NUM. MOTOR],
+            AND([_THISROW_BEFORE] <> [_THISROW], [NUM. MOTOR] <> "")
+          )
+        )
+      )
+    mensaje_error: "⚠ Este número de motor ya existe en el sistema."
+
+  # ----------------------------------------------------------
+  # NUM. MOTOR: el prefijo debe coincidir con el COD MOTOR del modelo
+  # Ej: si CHASIS empieza con PPA1A → COD MOTOR = 1P52FMH
+  #     entonces NUM. MOTOR debe empezar con "1P52FMH"
+  # ----------------------------------------------------------
+  motor_prefijo_correcto:
+    columna: "NUM. MOTOR"
+    tipo: "Valid_if"
+    expresion: >
+      OR(
+        LEN([COD MOTOR]) = 0,
+        STARTS_WITH(UPPER(TRIM([NUM. MOTOR])), UPPER([COD MOTOR]))
+      )
+    mensaje_error: "⚠ El número de motor no corresponde al modelo. Debe comenzar con: [COD MOTOR]"
+
+  # ----------------------------------------------------------
+  # CHASIS: debe comenzar con "PPA" (prefijo válido de la empresa)
+  # ----------------------------------------------------------
+  chasis_formato_valido:
+    columna: "CHASIS"
+    tipo: "Valid_if"
+    expresion: >
+      AND(
+        STARTS_WITH(UPPER(TRIM([CHASIS])), "PPA"),
+        LEN(TRIM([CHASIS])) >= 15
+      )
+    mensaje_error: "⚠ El número de chasis no tiene el formato correcto. Debe comenzar con PPA y tener al menos 15 caracteres."
+
+  # ----------------------------------------------------------
+  # MODELO: no debe quedar en "MODELO DESCONOCIDO"
+  # (significa que el prefijo del chasis no está mapeado)
+  # ----------------------------------------------------------
+  modelo_reconocido:
+    columna: "CHASIS"
+    tipo: "Valid_if"
+    expresion: >
+      [MODELO] <> "MODELO DESCONOCIDO"
+    mensaje_error: "⚠ El prefijo del chasis no corresponde a ningún modelo registrado."

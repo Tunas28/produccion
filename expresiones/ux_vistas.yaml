@@ -1,0 +1,128 @@
+# ============================================================
+# CONFIGURACIÓN DE VISTAS Y UX - AppSheets
+# App móvil de registro de producción de motos
+# ============================================================
+
+vistas:
+
+  # ----------------------------------------------------------
+  # VISTA PRINCIPAL: Lista de producción del día
+  # ----------------------------------------------------------
+  lista_produccion:
+    nombre: "Producción del Día"
+    tipo: Table
+    tabla: Produccion
+    sort_by:
+      - columna: FECHA
+        orden: Descending
+      - columna: ID
+        orden: Descending
+    filtro: "[FECHA] = TODAY()"
+    columnas_visibles:
+      - ID
+      - CHASIS
+      - MODELO
+      - COLOR
+      - NUM. MOTOR
+
+  # ----------------------------------------------------------
+  # VISTA FORMULARIO: Carga de nueva moto desde celular
+  # ----------------------------------------------------------
+  nuevo_registro:
+    nombre: "Registrar Moto"
+    tipo: Form
+    tabla: Produccion
+    descripcion: >
+      El operario escanea el QR del chasis con la cámara.
+      Los campos MODELO, CILINDRADA, RUEDA, COD MOD y COD MOTOR
+      se completan automáticamente.
+      El operario solo debe ingresar: NUM. MOTOR y COLOR.
+    columnas_en_formulario:
+      - nombre: FECHA
+        editable: true
+        posicion: 1
+      - nombre: CHASIS
+        editable: true
+        scan: true          # Activar escáner QR
+        posicion: 2
+      - nombre: MODELO
+        editable: false     # Solo lectura - calculado
+        posicion: 3
+      - nombre: CILINDRADA
+        editable: false     # Solo lectura - calculado
+        posicion: 4
+      - nombre: RUEDA
+        editable: false     # Solo lectura - calculado
+        posicion: 5
+      - nombre: NUM. MOTOR
+        editable: true
+        posicion: 6
+      - nombre: COLOR
+        editable: true
+        posicion: 7
+      - nombre: OBS
+        editable: true
+        posicion: 8
+      - nombre: COD MOD
+        editable: false     # Solo lectura - calculado
+        show: false         # Oculto en el form, visible en la hoja
+      - nombre: COD MOTOR
+        editable: false     # Solo lectura - calculado
+        show: false         # Oculto en el form, visible en la hoja
+
+  # ----------------------------------------------------------
+  # VISTA DETALLE: Ficha completa de una moto
+  # ----------------------------------------------------------
+  detalle_moto:
+    nombre: "Detalle de Moto"
+    tipo: Detail
+    tabla: Produccion
+    columnas_visibles:
+      - FECHA
+      - ID
+      - CHASIS
+      - MODELO
+      - CILINDRADA
+      - NUM. MOTOR
+      - COLOR
+      - RUEDA
+      - COD MOD
+      - COD MOTOR
+      - OBS
+
+  # ----------------------------------------------------------
+  # VISTA DASHBOARD: Resumen del día / semana
+  # ----------------------------------------------------------
+  dashboard:
+    nombre: "Resumen"
+    tipo: Dashboard
+    paneles:
+      - nombre: "Motos hoy"
+        formula: "COUNTIF(Produccion[FECHA], TODAY())"
+      - nombre: "Por modelo (hoy)"
+        tipo: Chart
+        tabla: Produccion
+        group_by: MODELO
+        filtro: "[FECHA] = TODAY()"
+      - nombre: "Por color (hoy)"
+        tipo: Chart
+        tabla: Produccion
+        group_by: COLOR
+        filtro: "[FECHA] = TODAY()"
+
+  # ----------------------------------------------------------
+  # VISTA BÚSQUEDA: Para verificar chasis o motor
+  # ----------------------------------------------------------
+  busqueda:
+    nombre: "Buscar"
+    tipo: Table
+    tabla: Produccion
+    search_columns:
+      - CHASIS
+      - NUM. MOTOR
+    columnas_visibles:
+      - FECHA
+      - CHASIS
+      - MODELO
+      - NUM. MOTOR
+      - COLOR

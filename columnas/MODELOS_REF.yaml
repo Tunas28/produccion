@@ -1,0 +1,80 @@
+# ============================================================
+# TABLA DE REFERENCIA: MODELOS
+# Usada para lookup y validación desde PRODUCCION
+# Esta tabla NO se edita desde la app (solo lectura)
+# ============================================================
+
+# Columnas de la hoja MODELOS_REF en Google Sheets:
+#   COD_MOD | MODELO          | CILINDRADA | RUEDA    | COD_MOTOR | PREFIJO_CHASIS
+#   --------|-----------------|------------|----------|-----------|---------------
+#   1A      | Cub 110         | 110        | ALEACION | 1P52FMH   | PPA1A
+#   BA      | Urban 110       | 110        | RAYOS    | 1P52FMH   | PPABA
+#   2B      | VX125           | 125        | ALEACION | 1P53FMI   | PPA2B
+#   AD      | Super Sport 200 | 200        | ALEACION | 163FML    | PPAAD
+#   EE      | Rally 250       | 250        | RAYOS    | 165FMM    | PPAEE
+#   GC      | Faiter SE 150   | 150        | ALEACION | 162FMJ    | PPAGC
+
+columns:
+
+  - name: COD_MOD
+    type: Text
+    key: true
+    label: true
+
+  - name: MODELO
+    type: Text
+
+  - name: CILINDRADA
+    type: Number
+
+  - name: RUEDA
+    type: Text
+
+  - name: COD_MOTOR
+    type: Text
+
+  - name: PREFIJO_CHASIS
+    type: Text
+
+data:
+  - COD_MOD: "1A"
+    MODELO: "Cub 110"
+    CILINDRADA: 110
+    RUEDA: "ALEACION"
+    COD_MOTOR: "1P52FMH"
+    PREFIJO_CHASIS: "PPA1A"
+
+  - COD_MOD: "BA"
+    MODELO: "Urban 110"
+    CILINDRADA: 110
+    RUEDA: "RAYOS"
+    COD_MOTOR: "1P52FMH"
+    PREFIJO_CHASIS: "PPABA"
+
+  - COD_MOD: "2B"
+    MODELO: "VX125"
+    CILINDRADA: 125
+    RUEDA: "ALEACION"
+    COD_MOTOR: "1P53FMI"
+    PREFIJO_CHASIS: "PPA2B"
+
+  - COD_MOD: "AD"
+    MODELO: "Super Sport 200"
+    CILINDRADA: 200
+    RUEDA: "ALEACION"
+    COD_MOTOR: "163FML"
+    PREFIJO_CHASIS: "PPAAD"
+
+  - COD_MOD: "EE"
+    MODELO: "Rally 250"
+    CILINDRADA: 250
+    RUEDA: "RAYOS"
+    COD_MOTOR: "165FMM"
+    PREFIJO_CHASIS: "PPAEE"
+
+  - COD_MOD: "GC"
+    MODELO: "Faiter SE 150"
+    CILINDRADA: 150
+    RUEDA: "ALEACION"
+    COD_MOTOR: "162FMJ"
+    PREFIJO_CHASIS: "PPAGC"

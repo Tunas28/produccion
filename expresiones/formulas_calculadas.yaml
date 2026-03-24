@@ -1,0 +1,121 @@
+# ============================================================
+# FÓRMULAS CALCULADAS - AppSheets
+# Tabla: PRODUCCION
+# Estas columnas se calculan AUTOMÁTICAMENTE al escanear el CHASIS
+# El usuario NO las edita
+# ============================================================
+
+# Función auxiliar reutilizable (no es AppSheets nativo, es documentación)
+# Patrón: IFS( LEFT([CHASIS], 5) = <prefijo>, <valor>, ..., TRUE, <default> )
+
+formulas:
+
+  # ----------------------------------------------------------
+  # MODELO - Nombre del modelo de la moto
+  # ----------------------------------------------------------
+  MODELO:
+    tipo: App formula
+    resultado_tipo: Text
+    editable: false
+    formula: |
+      IFS(
+        LEFT([CHASIS], 5) = "PPA1A", "Cub 110",
+        LEFT([CHASIS], 5) = "PPABA", "Urban 110",
+        LEFT([CHASIS], 5) = "PPA2B", "VX125",
+        LEFT([CHASIS], 5) = "PPAAD", "Super Sport 200",
+        LEFT([CHASIS], 5) = "PPAEE", "Rally 250",
+        LEFT([CHASIS], 5) = "PPAGC", "Faiter SE 150",
+        TRUE, "MODELO DESCONOCIDO"
+      )
+
+  # ----------------------------------------------------------
+  # CILINDRADA - Cilindrada en cc
+  # ----------------------------------------------------------
+  CILINDRADA:
+    tipo: App formula
+    resultado_tipo: Number
+    editable: false
+    formula: |
+      IFS(
+        LEFT([CHASIS], 5) = "PPA1A", 110,
+        LEFT([CHASIS], 5) = "PPABA", 110,
+        LEFT([CHASIS], 5) = "PPA2B", 125,
+        LEFT([CHASIS], 5) = "PPAAD", 200,
+        LEFT([CHASIS], 5) = "PPAEE", 250,
+        LEFT([CHASIS], 5) = "PPAGC", 150,
+        TRUE, 0
+      )
+
+  # ----------------------------------------------------------
+  # RUEDA - Tipo de rueda (ALEACION o RAYOS)
+  # ----------------------------------------------------------
+  RUEDA:
+    tipo: App formula
+    resultado_tipo: Text
+    editable: false
+    formula: |
+      IFS(
+        LEFT([CHASIS], 5) = "PPA1A", "ALEACION",
+        LEFT([CHASIS], 5) = "PPABA", "RAYOS",
+        LEFT([CHASIS], 5) = "PPA2B", "ALEACION",
+        LEFT([CHASIS], 5) = "PPAAD", "ALEACION",
+        LEFT([CHASIS], 5) = "PPAEE", "RAYOS",
+        LEFT([CHASIS], 5) = "PPAGC", "ALEACION",
+        TRUE, ""
+      )
+
+  # ----------------------------------------------------------
+  # COD MOD - Código del modelo (para clasificación interna)
+  # ----------------------------------------------------------
+  COD_MOD:
+    tipo: App formula
+    resultado_tipo: Text
+    editable: false
+    formula: |
+      IFS(
+        LEFT([CHASIS], 5) = "PPA1A", "1A",
+        LEFT([CHASIS], 5) = "PPABA", "BA",
+        LEFT([CHASIS], 5) = "PPA2B", "2B",
+        LEFT([CHASIS], 5) = "PPAAD", "AD",
+        LEFT([CHASIS], 5) = "PPAEE", "EE",
+        LEFT([CHASIS], 5) = "PPAGC", "GC",
+        TRUE, ""
+      )
+
+  # ----------------------------------------------------------
+  # COD MOTOR - Código/prefijo del motor
+  # ----------------------------------------------------------
+  COD_MOTOR:
+    tipo: App formula
+    resultado_tipo: Text
+    editable: false
+    formula: |
+      IFS(
+        LEFT([CHASIS], 5) = "PPA1A", "1P52FMH",
+        LEFT([CHASIS], 5) = "PPABA", "1P52FMH",
+        LEFT([CHASIS], 5) = "PPA2B", "1P53FMI",
+        LEFT([CHASIS], 5) = "PPAAD", "163FML",
+        LEFT([CHASIS], 5) = "PPAEE", "165FMM",
+        LEFT([CHASIS], 5) = "PPAGC", "162FMJ",
+        TRUE, ""
+      )
+
+  # ----------------------------------------------------------
+  # ID - Número correlativo automático
+  # ----------------------------------------------------------
+  ID:
+    tipo: App formula
+    resultado_tipo: Number
+    editable: false
+    formula: |
+      MAXROW("Produccion", "ID") + 1
+
+  # ----------------------------------------------------------
+  # FECHA - Fecha de producción (hoy por defecto)
+  # ----------------------------------------------------------
+  FECHA:
+    tipo: Initial value
+    resultado_tipo: Date
+    editable: true
+    formula: |
+      TODAY()

@@ -1,0 +1,199 @@
+# ============================================================
+# TABLA: PRODUCCION
+# AppSheets - Configuración de columnas
+# ============================================================
+
+columns:
+
+  - name: FECHA
+    type: Date
+    key: false
+    label: true
+    formula: ""
+    initial_value: "TODAY()"
+    editable: true
+    required: true
+    show: true
+
+  - name: ID
+    type: Number
+    key: false
+    label: false
+    formula: "MAXROW(\"Produccion\", \"ID\") + 1"
+    initial_value: ""
+    editable: false
+    required: false
+    show: true
+
+  - name: CHASIS
+    type: Text
+    key: true
+    label: true
+    formula: ""
+    initial_value: ""
+    editable: true
+    required: true
+    show: true
+    scan: true          # Lectura via QR con cámara del celular
+    search: true
+    # Validación: no puede haber 2 chasis iguales
+    valid_if: >
+      AND(
+        NOT(
+          IN([CHASIS],
+            SELECT(Produccion[CHASIS],
+              AND([_THISROW_BEFORE] <> [_THISROW], [CHASIS] <> "")
+            )
+          )
+        ),
+        LEN([CHASIS]) > 0
+      )
+    valid_if_error: "Este número de chasis ya existe en el sistema."
+
+  - name: MODELO
+    type: Text
+    key: false
+    label: false
+    editable: false
+    required: false
+    show: true
+    # Auto-calculado desde el prefijo del chasis
+    formula: >
+      IFS(
+        LEFT([CHASIS], 5) = "PPA1A", "Cub 110",
+        LEFT([CHASIS], 5) = "PPABA", "Urban 110",
+        LEFT([CHASIS], 5) = "PPA2B", "VX125",
+        LEFT([CHASIS], 5) = "PPAAD", "Super Sport 200",
+        LEFT([CHASIS], 5) = "PPAEE", "Rally 250",
+        LEFT([CHASIS], 5) = "PPAGC", "Faiter SE 150",
+        TRUE, "MODELO DESCONOCIDO"
+      )
+
+  - name: CILINDRADA
+    type: Number
+    key: false
+    label: false
+    editable: false
+    required: false
+    show: true
+    # Auto-calculado desde el prefijo del chasis
+    formula: >
+      IFS(
+        LEFT([CHASIS], 5) = "PPA1A", 110,
+        LEFT([CHASIS], 5) = "PPABA", 110,
+        LEFT([CHASIS], 5) = "PPA2B", 125,
+        LEFT([CHASIS], 5) = "PPAAD", 200,
+        LEFT([CHASIS], 5) = "PPAEE", 250,
+        LEFT([CHASIS], 5) = "PPAGC", 150,
+        TRUE, 0
+      )
+
+  - name: NUM. MOTOR
+    type: Text
+    key: false
+    label: false
+    formula: ""
+    initial_value: ""
+    editable: true
+    required: true
+    show: true
+    search: true
+    scan: false
+    # Validación: no puede haber 2 números de motor iguales
+    valid_if: >
+      AND(
+        NOT(
+          IN([NUM. MOTOR],
+            SELECT(Produccion[NUM. MOTOR],
+              AND([_THISROW_BEFORE] <> [_THISROW], [NUM. MOTOR] <> "")
+            )
+          )
+        ),
+        LEN([NUM. MOTOR]) > 0,
+        STARTS_WITH([NUM. MOTOR], [COD MOTOR])
+      )
+    valid_if_error: "El número de motor ya existe o no corresponde al código de motor del modelo."
+
+  - name: COLOR
+    type: Enum
+    key: false
+    label: false
+    formula: ""
+    initial_value: ""
+    editable: true
+    required: true
+    show: true
+    enum_values:
+      - NEGRO
+      - AZUL
+      - GRIS
+      - ROJO
+      - NARANJA
+      - BLANCO
+
+  - name: RUEDA
+    type: Text
+    key: false
+    label: false
+    editable: false
+    required: false
+    show: true
+    # Auto-calculado desde el prefijo del chasis
+    formula: >
+      IFS(
+        LEFT([CHASIS], 5) = "PPA1A", "ALEACION",
+        LEFT([CHASIS], 5) = "PPABA", "RAYOS",
+        LEFT([CHASIS], 5) = "PPA2B", "ALEACION",
+        LEFT([CHASIS], 5) = "PPAAD", "ALEACION",
+        LEFT([CHASIS], 5) = "PPAEE", "RAYOS",
+        LEFT([CHASIS], 5) = "PPAGC", "ALEACION",
+        TRUE, ""
+      )
+
+  - name: OBS
+    type: LongText
+    key: false
+    label: false
+    formula: ""
+    initial_value: ""
+    editable: true
+    required: false
+    show: true
+
+  - name: COD MOD
+    type: Text
+    key: false
+    label: false
+    editable: false
+    required: false
+    show: true
+    # Auto-calculado desde el prefijo del chasis
+    formula: >
+      IFS(
+        LEFT([CHASIS], 5) = "PPA1A", "1A",
+        LEFT([CHASIS], 5) = "PPABA", "BA",
+        LEFT([CHASIS], 5) = "PPA2B", "2B",
+        LEFT([CHASIS], 5) = "PPAAD", "AD",
+        LEFT([CHASIS], 5) = "PPAEE", "EE",
+        LEFT([CHASIS], 5) = "PPAGC", "GC",
+        TRUE, ""
+      )
+
+  - name: COD MOTOR
+    type: Text
+    key: false
+    label: false
+    editable: false
+    required: false
+    show: true
+    # Auto-calculado desde el prefijo del chasis
+    formula: >
+      IFS(
+        LEFT([CHASIS], 5) = "PPA1A", "1P52FMH",
+        LEFT([CHASIS], 5) = "PPABA", "1P52FMH",
+        LEFT([CHASIS], 5) = "PPA2B", "1P53FMI",
+        LEFT([CHASIS], 5) = "PPAAD", "163FML",
+        LEFT([CHASIS], 5) = "PPAEE", "165FMM",
+        LEFT([CHASIS], 5) = "PPAGC", "162FMJ",
+        TRUE, ""
+      )
