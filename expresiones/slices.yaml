@@ -1,0 +1,105 @@
+# ============================================================
+# SLICES (Filtros de datos) - AppSheets
+# Configurar en: Data → Slices
+# Los slices alimentan los gráficos y las vistas filtradas
+# ============================================================
+
+slices:
+
+  # ──────────────────────────────────────────────────────────
+  # SLICE: Registros de HOY
+  # Uso: Vista principal del operario + KPI diario + Gráfico por modelo hoy
+  # ──────────────────────────────────────────────────────────
+  - name: Produccion_Hoy
+    tabla: Produccion
+    filter: "[FECHA] = TODAY()"
+    columnas_incluidas: ALL
+    descripcion: "Solo registros del día actual"
+
+  # ──────────────────────────────────────────────────────────
+  # SLICE: Registros de ESTA SEMANA
+  # Uso: KPI semanal + Gráfico de tendencia semanal
+  # ──────────────────────────────────────────────────────────
+  - name: Produccion_Esta_Semana
+    tabla: Produccion
+    filter: >
+      AND(
+        WEEKNUM([FECHA]) = WEEKNUM(TODAY()),
+        YEAR([FECHA]) = YEAR(TODAY())
+      )
+    columnas_incluidas: ALL
+    descripcion: "Solo registros de la semana actual (lunes a domingo)"
+
+  # ──────────────────────────────────────────────────────────
+  # SLICE: Registros de ESTE MES
+  # Uso: KPI mensual + Gráficos de color, rueda, modelo del mes
+  # ──────────────────────────────────────────────────────────
+  - name: Produccion_Este_Mes
+    tabla: Produccion
+    filter: >
+      AND(
+        MONTH([FECHA]) = MONTH(TODAY()),
+        YEAR([FECHA]) = YEAR(TODAY())
+      )
+    columnas_incluidas: ALL
+    descripcion: "Solo registros del mes actual"
+
+  # ──────────────────────────────────────────────────────────
+  # SLICE: Registros de ESTE AÑO
+  # Uso: Gráfico histórico semanal del año
+  # ──────────────────────────────────────────────────────────
+  - name: Produccion_Este_Anio
+    tabla: Produccion
+    filter: "YEAR([FECHA]) = YEAR(TODAY())"
+    columnas_incluidas: ALL
+    descripcion: "Solo registros del año actual"
+
+  # ──────────────────────────────────────────────────────────
+  # SLICE: Todos los registros (sin filtro)
+  # Uso: Histórico mensual + búsqueda global
+  # ──────────────────────────────────────────────────────────
+  - name: Produccion_Todo
+    tabla: Produccion
+    filter: "TRUE"
+    columnas_incluidas: ALL
+    descripcion: "Histórico completo sin filtro de fecha"
+
+  # ──────────────────────────────────────────────────────────
+  # SLICE: Por modelo - Cub 110
+  # Uso: Vista específica por modelo (duplicar para cada modelo)
+  # ──────────────────────────────────────────────────────────
+  - name: Produccion_Cub110
+    tabla: Produccion
+    filter: "[MODELO] = \"Cub 110\""
+    columnas_incluidas: ALL
+    descripcion: "Solo motos Cub 110"
+
+  - name: Produccion_Urban110
+    tabla: Produccion
+    filter: "[MODELO] = \"Urban 110\""
+    columnas_incluidas: ALL
+    descripcion: "Solo motos Urban 110"
+
+  - name: Produccion_VX125
+    tabla: Produccion
+    filter: "[MODELO] = \"VX125\""
+    columnas_incluidas: ALL
+    descripcion: "Solo motos VX125"
+
+  - name: Produccion_SuperSport
+    tabla: Produccion
+    filter: "[MODELO] = \"Super Sport 200\""
+    columnas_incluidas: ALL
+    descripcion: "Solo motos Super Sport 200"
+
+  - name: Produccion_Rally
+    tabla: Produccion
+    filter: "[MODELO] = \"Rally 250\""
+    columnas_incluidas: ALL
+    descripcion: "Solo motos Rally 250"
+
+  - name: Produccion_FaiterSE
+    tabla: Produccion
+    filter: "[MODELO] = \"Faiter SE 150\""
+    columnas_incluidas: ALL
+    descripcion: "Solo motos Faiter SE 150"

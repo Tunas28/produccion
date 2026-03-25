@@ -1,125 +1,70 @@
 # ============================================================
 # TABLA: PRODUCCION
-# AppSheets - Configuración de columnas
+# AppSheets - Definición completa de columnas
 # ============================================================
 
 columns:
 
+  # ──────────────────────────────────────────────────────────
+  # COLUMNAS DE REGISTRO (ingreso manual o automático)
+  # ──────────────────────────────────────────────────────────
+
   - name: FECHA
     type: Date
     key: false
-    label: true
-    formula: ""
-    initial_value: "TODAY()"
+    label: false
     editable: true
     required: true
     show: true
+    initial_value: "TODAY()"
+    search: false
 
   - name: ID
     type: Number
     key: false
     label: false
-    formula: "MAXROW(\"Produccion\", \"ID\") + 1"
-    initial_value: ""
     editable: false
     required: false
     show: true
+    formula: "MAXROW(\"Produccion\", \"ID\") + 1"
 
   - name: CHASIS
     type: Text
     key: true
     label: true
-    formula: ""
-    initial_value: ""
     editable: true
     required: true
     show: true
-    scan: true          # Lectura via QR con cámara del celular
+    scan: true          # ← Activa escáner QR con la cámara del celular
     search: true
-    # Validación: no puede haber 2 chasis iguales
     valid_if: >
       AND(
-        NOT(
-          IN([CHASIS],
-            SELECT(Produccion[CHASIS],
-              AND([_THISROW_BEFORE] <> [_THISROW], [CHASIS] <> "")
-            )
-          )
-        ),
-        LEN([CHASIS]) > 0
+        STARTS_WITH(UPPER(TRIM([CHASIS])), "PPA"),
+        LEN(TRIM([CHASIS])) >= 15,
+        NOT(IN([CHASIS], SELECT(Produccion[CHASIS], [_THISROW_BEFORE] <> [_THISROW])))
       )
-    valid_if_error: "Este número de chasis ya existe en el sistema."
-
-  - name: MODELO
-    type: Text
-    key: false
-    label: false
-    editable: false
-    required: false
-    show: true
-    # Auto-calculado desde el prefijo del chasis
-    formula: >
-      IFS(
-        LEFT([CHASIS], 5) = "PPA1A", "Cub 110",
-        LEFT([CHASIS], 5) = "PPABA", "Urban 110",
-        LEFT([CHASIS], 5) = "PPA2B", "VX125",
-        LEFT([CHASIS], 5) = "PPAAD", "Super Sport 200",
-        LEFT([CHASIS], 5) = "PPAEE", "Rally 250",
-        LEFT([CHASIS], 5) = "PPAGC", "Faiter SE 150",
-        TRUE, "MODELO DESCONOCIDO"
-      )
-
-  - name: CILINDRADA
-    type: Number
-    key: false
-    label: false
-    editable: false
-    required: false
-    show: true
-    # Auto-calculado desde el prefijo del chasis
-    formula: >
-      IFS(
-        LEFT([CHASIS], 5) = "PPA1A", 110,
-        LEFT([CHASIS], 5) = "PPABA", 110,
-        LEFT([CHASIS], 5) = "PPA2B", 125,
-        LEFT([CHASIS], 5) = "PPAAD", 200,
-        LEFT([CHASIS], 5) = "PPAEE", 250,
-        LEFT([CHASIS], 5) = "PPAGC", 150,
-        TRUE, 0
-      )
+    valid_if_error: "Chasis inválido o duplicado. Verificar formato (mínimo 15 caracteres, debe comenzar con PPA)."
 
   - name: NUM. MOTOR
     type: Text
     key: false
     label: false
-    formula: ""
-    initial_value: ""
     editable: true
     required: true
     show: true
     search: true
-    scan: false
-    # Validación: no puede haber 2 números de motor iguales
     valid_if: >
       AND(
-        NOT(
-          IN([NUM. MOTOR],
-            SELECT(Produccion[NUM. MOTOR],
-              AND([_THISROW_BEFORE] <> [_THISROW], [NUM. MOTOR] <> "")
-            )
-          )
-        ),
-        LEN([NUM. MOTOR]) > 0,
-        STARTS_WITH([NUM. MOTOR], [COD MOTOR])
+        LEN(TRIM([NUM. MOTOR])) > 0,
+        NOT(IN([NUM. MOTOR], SELECT(Produccion[NUM. MOTOR], [_THISROW_BEFORE] <> [_THISROW]))),
+        OR(LEN([COD MOTOR]) = 0, STARTS_WITH(UPPER(TRIM([NUM. MOTOR])), UPPER([COD MOTOR])))
       )
-    valid_if_error: "El número de motor ya existe o no corresponde al código de motor del modelo."
+    valid_if_error: "Número de motor duplicado o no corresponde al modelo escaneado."
 
   - name: COLOR
     type: Enum
     key: false
     label: false
-    formula: ""
-    initial_value: ""
     editable: true
     required: true
     show: true
@@ -131,6 +76,55 @@ columns:
       - NARANJA
       - BLANCO
 
+  - name: OBS
+    type: LongText
+    key: false
+    label: false
+    editable: true
+    required: false
+    show: true
+
+  # ──────────────────────────────────────────────────────────
+  # COLUMNAS AUTO-CALCULADAS desde el prefijo del CHASIS
+  # editable: false — el usuario NO las toca
+  # ──────────────────────────────────────────────────────────
+
+  - name: MODELO
+    type: Text
+    key: false
+    label: false
+    editable: false
+    required: false
+    show: true
+    formula: >
+      IFS(
+        LEFT([CHASIS], 5) = "PPA1A", "Cub 110",
+        LEFT([CHASIS], 5) = "PPABA", "Urban 110",
+        LEFT([CHASIS], 5) = "PPA2B", "VX125",
+        LEFT([CHASIS], 5) = "PPAAD", "Super Sport 200",
+        LEFT([CHASIS], 5) = "PPAEE", "Rally 250",
+        LEFT([CHASIS], 5) = "PPAGC", "Faiter SE 150",
+        TRUE, "DESCONOCIDO"
+      )
+
+  - name: CILINDRADA
+    type: Number
+    key: false
+    label: false
+    editable: false
+    required: false
+    show: true
+    formula: >
+      IFS(
+        LEFT([CHASIS], 5) = "PPA1A", 110,
+        LEFT([CHASIS], 5) = "PPABA", 110,
+        LEFT([CHASIS], 5) = "PPA2B", 125,
+        LEFT([CHASIS], 5) = "PPAAD", 200,
+        LEFT([CHASIS], 5) = "PPAEE", 250,
+        LEFT([CHASIS], 5) = "PPAGC", 150,
+        TRUE, 0
+      )
+
   - name: RUEDA
     type: Text
     key: false
@@ -138,7 +132,6 @@ columns:
     editable: false
     required: false
     show: true
-    # Auto-calculado desde el prefijo del chasis
     formula: >
       IFS(
         LEFT([CHASIS], 5) = "PPA1A", "ALEACION",
@@ -150,16 +143,6 @@ columns:
         TRUE, ""
       )
 
-  - name: OBS
-    type: LongText
-    key: false
-    label: false
-    formula: ""
-    initial_value: ""
-    editable: true
-    required: false
-    show: true
-
   - name: COD MOD
     type: Text
     key: false
@@ -167,7 +150,6 @@ columns:
     editable: false
     required: false
     show: true
-    # Auto-calculado desde el prefijo del chasis
     formula: >
       IFS(
         LEFT([CHASIS], 5) = "PPA1A", "1A",
@@ -186,7 +168,6 @@ columns:
     editable: false
     required: false
     show: true
-    # Auto-calculado desde el prefijo del chasis
     formula: >
       IFS(
         LEFT([CHASIS], 5) = "PPA1A", "1P52FMH",
@@ -197,3 +178,79 @@ columns:
         LEFT([CHASIS], 5) = "PPAGC", "162FMJ",
         TRUE, ""
       )
+
+  # ──────────────────────────────────────────────────────────
+  # COLUMNAS VIRTUALES para KPIs y Gráficos
+  # Estas columnas NO se guardan en la hoja, son solo para filtros y reportes
+  # ──────────────────────────────────────────────────────────
+
+  - name: SEMANA
+    type: Number
+    key: false
+    label: false
+    editable: false
+    show: false
+    formula: "WEEKNUM([FECHA])"
+    description: "Número de semana del año - usado para KPIs semanales"
+
+  - name: MES
+    type: Number
+    key: false
+    label: false
+    editable: false
+    show: false
+    formula: "MONTH([FECHA])"
+    description: "Número de mes - usado para KPIs mensuales"
+
+  - name: AÑO
+    type: Number
+    key: false
+    label: false
+    editable: false
+    show: false
+    formula: "YEAR([FECHA])"
+    description: "Año - evita confusión entre semanas de distintos años"
+
+  - name: MES_LABEL
+    type: Text
+    key: false
+    label: false
+    editable: false
+    show: false
+    formula: "TEXT([FECHA], \"MMM YYYY\")"
+    description: "Ej: Mar 2026 - para agrupar gráficos mensuales"
+
+  - name: ES_HOY
+    type: Yes/No
+    key: false
+    label: false
+    editable: false
+    show: false
+    formula: "[FECHA] = TODAY()"
+    description: "Verdadero si el registro es de hoy - para KPI diario"
+
+  - name: ES_ESTA_SEMANA
+    type: Yes/No
+    key: false
+    label: false
+    editable: false
+    show: false
+    formula: >
+      AND(
+        WEEKNUM([FECHA]) = WEEKNUM(TODAY()),
+        YEAR([FECHA]) = YEAR(TODAY())
+      )
+    description: "Verdadero si el registro es de esta semana"
+
+  - name: ES_ESTE_MES
+    type: Yes/No
+    key: false
+    label: false
+    editable: false
+    show: false
+    formula: >
+      AND(
+        MONTH([FECHA]) = MONTH(TODAY()),
+        YEAR([FECHA]) = YEAR(TODAY())
+      )
+    description: "Verdadero si el registro es de este mes"

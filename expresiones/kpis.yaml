@@ -1,0 +1,221 @@
+# ============================================================
+# KPIs y GRÁFICOS - AppSheets
+# Tabla: PRODUCCION
+# Configurar en: UX → Views → Dashboard
+# ============================================================
+
+# ┌─────────────────────────────────────────────────────────┐
+# │  KPIs  (agregar como "Deck" o "Card" en el Dashboard)   │
+# └─────────────────────────────────────────────────────────┘
+
+kpis:
+
+  - id: kpi_hoy
+    nombre: "Motos Hoy"
+    icono: "🏍"
+    formula: "COUNTIF(Produccion[ES_HOY], TRUE)"
+    descripcion: "Total de motos registradas hoy"
+
+  - id: kpi_semana
+    nombre: "Motos Esta Semana"
+    icono: "📅"
+    formula: "COUNTIF(Produccion[ES_ESTA_SEMANA], TRUE)"
+    descripcion: "Total de motos registradas en la semana actual"
+
+  - id: kpi_mes
+    nombre: "Motos Este Mes"
+    icono: "📆"
+    formula: "COUNTIF(Produccion[ES_ESTE_MES], TRUE)"
+    descripcion: "Total de motos registradas en el mes actual"
+
+  - id: kpi_promedio_diario
+    nombre: "Promedio Diario (mes)"
+    icono: "📊"
+    formula: >
+      ROUND(
+        COUNTIF(Produccion[ES_ESTE_MES], TRUE)
+        /
+        MAX(1, DAY(TODAY())),
+      1)
+    descripcion: "Promedio de motos por día en el mes actual"
+
+  - id: kpi_total_acumulado
+    nombre: "Total Acumulado"
+    icono: "🔢"
+    formula: "COUNT(Produccion[CHASIS])"
+    descripcion: "Total histórico de motos registradas"
+
+  - id: kpi_modelo_lider_hoy
+    nombre: "Modelo Top Hoy"
+    icono: "🥇"
+    formula: >
+      INDEX(
+        SORT(
+          UNIQUE(
+            FILTER(Produccion[MODELO], [ES_HOY] = TRUE)
+          )
+        ),
+        1
+      )
+    descripcion: "Modelo más producido hoy (requiere slice de hoy)"
+    nota: "Alternativa simple: usar gráfico de barras por MODELO filtrado a hoy"
+
+  - id: kpi_color_lider_mes
+    nombre: "Color Más Producido (mes)"
+    icono: "🎨"
+    formula: "TOP(SELECT(Produccion[COLOR], [ES_ESTE_MES] = TRUE))"
+    descripcion: "Color con más unidades en el mes"
+
+# ┌─────────────────────────────────────────────────────────┐
+# │  GRÁFICOS  (agregar como Chart views en el Dashboard)   │
+# └─────────────────────────────────────────────────────────┘
+
+graficos:
+
+  # --------------------------------------------------------
+  # GRÁFICO 1: Producción diaria del mes (línea de tendencia)
+  # --------------------------------------------------------
+  - id: grafico_tendencia_diaria
+    nombre: "Producción por Día"
+    tipo: Line Chart
+    slice: Produccion_Este_Mes
+    eje_x: FECHA
+    eje_y: COUNT
+    group_by: FECHA
+    descripcion: >
+      Muestra cuántas motos se produjeron cada día del mes.
+      Ideal para ver tendencias y días pico.
+
+  # --------------------------------------------------------
+  # GRÁFICO 2: Producción por modelo - mes actual (barras)
+  # --------------------------------------------------------
+  - id: grafico_modelos_mes
+    nombre: "Por Modelo (mes)"
+    tipo: Bar Chart
+    slice: Produccion_Este_Mes
+    eje_x: MODELO
+    eje_y: COUNT
+    group_by: MODELO
+    sort: descending
+    descripcion: >
+      Ranking de modelos producidos en el mes.
+      Permite ver qué modelos lideran la producción.
+
+  # --------------------------------------------------------
+  # GRÁFICO 3: Distribución por color - mes actual (torta)
+  # --------------------------------------------------------
+  - id: grafico_colores_mes
+    nombre: "Por Color (mes)"
+    tipo: Pie Chart
+    slice: Produccion_Este_Mes
+    group_by: COLOR
+    descripcion: >
+      Distribución porcentual de colores producidos en el mes.
+      Útil para planificar pintura e insumos.
+
+  # --------------------------------------------------------
+  # GRÁFICO 4: Aleación vs Rayos - mes actual (torta)
+  # --------------------------------------------------------
+  - id: grafico_ruedas_mes
+    nombre: "Aleación vs Rayos (mes)"
+    tipo: Pie Chart
+    slice: Produccion_Este_Mes
+    group_by: RUEDA
+    descripcion: >
+      Proporción entre motos con rueda de aleación y de rayos.
+
+  # --------------------------------------------------------
+  # GRÁFICO 5: Producción semanal del año (barras)
+  # --------------------------------------------------------
+  - id: grafico_semanal_anio
+    nombre: "Producción Semanal"
+    tipo: Bar Chart
+    slice: Produccion_Este_Anio
+    eje_x: SEMANA
+    eje_y: COUNT
+    group_by: SEMANA
+    descripcion: >
+      Total de motos por semana del año.
+      Permite detectar semanas de alta/baja producción.
+
+  # --------------------------------------------------------
+  # GRÁFICO 6: Modelos por color - mes actual (barras agrupadas)
+  # --------------------------------------------------------
+  - id: grafico_modelo_color
+    nombre: "Modelo × Color (mes)"
+    tipo: Bar Chart
+    slice: Produccion_Este_Mes
+    eje_x: MODELO
+    series: COLOR
+    group_by: MODELO
+    stack: true
+    descripcion: >
+      Barras apiladas: cuántas unidades de cada color se produjeron
+      por modelo. Ideal para planificación de armado.
+
+  # --------------------------------------------------------
+  # GRÁFICO 7: Producción por modelo HOY (barras horizontales)
+  # --------------------------------------------------------
+  - id: grafico_modelos_hoy
+    nombre: "Por Modelo (hoy)"
+    tipo: Bar Chart
+    slice: Produccion_Hoy
+    eje_x: MODELO
+    eje_y: COUNT
+    group_by: MODELO
+    orientacion: horizontal
+    descripcion: >
+      Cuántas unidades de cada modelo se produjeron hoy.
+      Primera vista que ve el supervisor al abrir la app.
+
+  # --------------------------------------------------------
+  # GRÁFICO 8: Histórico mensual (barras por mes)
+  # --------------------------------------------------------
+  - id: grafico_historico_mensual
+    nombre: "Histórico Mensual"
+    tipo: Bar Chart
+    slice: Produccion_Todo
+    eje_x: MES_LABEL
+    eje_y: COUNT
+    group_by: MES_LABEL
+    descripcion: >
+      Producción total por mes. Vista histórica de largo plazo.
+
+# ┌─────────────────────────────────────────────────────────┐
+# │  FÓRMULAS DE APOYO PARA KPIs  (usar en columnas        │
+# │  virtuales de la tabla o en expresiones de vistas)     │
+# └─────────────────────────────────────────────────────────┘
+
+formulas_kpi:
+
+  total_hoy:
+    formula: "COUNTIF(Produccion[ES_HOY], TRUE)"
+    uso: "Tarjeta KPI en dashboard, también en header de la vista lista"
+
+  total_semana:
+    formula: "COUNTIF(Produccion[ES_ESTA_SEMANA], TRUE)"
+    uso: "Tarjeta KPI en dashboard"
+
+  total_mes:
+    formula: "COUNTIF(Produccion[ES_ESTE_MES], TRUE)"
+    uso: "Tarjeta KPI en dashboard"
+
+  promedio_diario_mes:
+    formula: "ROUND(COUNTIF(Produccion[ES_ESTE_MES], TRUE) / MAX(1, DAY(TODAY())), 1)"
+    uso: "Tarjeta KPI - muestra ritmo de producción"
+
+  total_acumulado:
+    formula: "COUNT(Produccion[CHASIS])"
+    uso: "Tarjeta KPI histórico"
+
+  conteo_modelo_hoy:
+    formula: "COUNTIFS(Produccion[MODELO], \"Cub 110\", Produccion[ES_HOY], TRUE)"
+    uso: "Reemplazar \"Cub 110\" por el modelo deseado"
+
+  conteo_color_mes:
+    formula: "COUNTIFS(Produccion[COLOR], \"NEGRO\", Produccion[ES_ESTE_MES], TRUE)"
+    uso: "Reemplazar \"NEGRO\" por el color deseado"
+
+  conteo_rueda_mes:
+    formula: "COUNTIFS(Produccion[RUEDA], \"ALEACION\", Produccion[ES_ESTE_MES], TRUE)"
+    uso: "Para saber cuántas son de aleación en el mes"

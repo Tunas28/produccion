@@ -1,83 +1,201 @@
 # ============================================================
-# CONFIGURACIÓN DE VISTAS Y UX - AppSheets
-# App móvil de registro de producción de motos
+# VISTAS Y UX - AppSheets
+# Configurar en: UX → Views
 # ============================================================
+
+# Orden de navegación recomendado (barra inferior de la app):
+# [ Registrar ] [ Hoy ] [ Buscar ] [ Dashboard ] [ Historial ]
 
 vistas:
 
-  # ----------------------------------------------------------
-  # VISTA PRINCIPAL: Lista de producción del día
-  # ----------------------------------------------------------
-  lista_produccion:
-    nombre: "Producción del Día"
-    tipo: Table
+  # ──────────────────────────────────────────────────────────
+  # 1. REGISTRAR (vista principal del operario)
+  # ──────────────────────────────────────────────────────────
+  - name: Registrar Moto
+    tipo: Form
     tabla: Produccion
+    posicion_nav: 1
+    icono: add_circle
+    descripcion: >
+      Formulario de carga. El operario escanea el QR del chasis
+      y solo ingresa NUM. MOTOR y COLOR.
+    campos_visibles:
+      - FECHA          # editable, valor inicial = hoy
+      - CHASIS         # editable, scan=true (QR)
+      - MODELO         # solo lectura, calculado automáticamente
+      - CILINDRADA     # solo lectura, calculado automáticamente
+      - RUEDA          # solo lectura, calculado automáticamente
+      - COD MOD        # solo lectura, calculado automáticamente
+      - COD MOTOR      # solo lectura, calculado automáticamente
+      - NUM. MOTOR     # editable, required
+      - COLOR          # editable, enum
+      - OBS            # editable, opcional
+    campos_ocultos:
+      - ID
+      - SEMANA
+      - MES
+      - AÑO
+      - MES_LABEL
+      - ES_HOY
+      - ES_ESTA_SEMANA
+      - ES_ESTE_MES
+
+  # ──────────────────────────────────────────────────────────
+  # 2. PRODUCCION DE HOY
+  # ──────────────────────────────────────────────────────────
+  - name: Hoy
+    tipo: Table
+    slice: Produccion_Hoy
+    posicion_nav: 2
+    icono: today
     sort_by:
-      - columna: FECHA
-        orden: Descending
       - columna: ID
         orden: Descending
-    filtro: "[FECHA] = TODAY()"
     columnas_visibles:
       - ID
       - CHASIS
       - MODELO
       - COLOR
       - NUM. MOTOR
+    header_formula: >
+      CONCATENATE("Motos hoy: ", COUNTIF(Produccion[ES_HOY], TRUE))
 
-  # ----------------------------------------------------------
-  # VISTA FORMULARIO: Carga de nueva moto desde celular
-  # ----------------------------------------------------------
-  nuevo_registro:
-    nombre: "Registrar Moto"
-    tipo: Form
-    tabla: Produccion
-    descripcion: >
-      El operario escanea el QR del chasis con la cámara.
-      Los campos MODELO, CILINDRADA, RUEDA, COD MOD y COD MOTOR
-      se completan automáticamente.
-      El operario solo debe ingresar: NUM. MOTOR y COLOR.
-    columnas_en_formulario:
-      - nombre: FECHA
-        editable: true
-        posicion: 1
-      - nombre: CHASIS
-        editable: true
-        scan: true          # Activar escáner QR
-        posicion: 2
-      - nombre: MODELO
-        editable: false     # Solo lectura - calculado
-        posicion: 3
-      - nombre: CILINDRADA
-        editable: false     # Solo lectura - calculado
-        posicion: 4
-      - nombre: RUEDA
-        editable: false     # Solo lectura - calculado
-        posicion: 5
-      - nombre: NUM. MOTOR
-        editable: true
-        posicion: 6
-      - nombre: COLOR
-        editable: true
-        posicion: 7
-      - nombre: OBS
-        editable: true
-        posicion: 8
-      - nombre: COD MOD
-        editable: false     # Solo lectura - calculado
-        show: false         # Oculto en el form, visible en la hoja
-      - nombre: COD MOTOR
-        editable: false     # Solo lectura - calculado
-        show: false         # Oculto en el form, visible en la hoja
+  # ──────────────────────────────────────────────────────────
+  # 3. BUSCAR (verificar chasis o motor existente)
+  # ──────────────────────────────────────────────────────────
+  - name: Buscar
+    tipo: Table
+    slice: Produccion_Todo
+    posicion_nav: 3
+    icono: search
+    search_columns:
+      - CHASIS
+      - NUM. MOTOR
+      - MODELO
+    columnas_visibles:
+      - FECHA
+      - CHASIS
+      - MODELO
+      - NUM. MOTOR
+      - COLOR
 
-  # ----------------------------------------------------------
-  # VISTA DETALLE: Ficha completa de una moto
-  # ----------------------------------------------------------
-  detalle_moto:
-    nombre: "Detalle de Moto"
+  # ──────────────────────────────────────────────────────────
+  # 4. DASHBOARD (supervisor / gerencia)
+  # ──────────────────────────────────────────────────────────
+  - name: Dashboard
+    tipo: Dashboard
+    posicion_nav: 4
+    icono: dashboard
+    paneles:
+
+      # Fila 1: KPIs en cards
+      - tipo: card_kpi
+        nombre: "Hoy"
+        formula: "COUNTIF(Produccion[ES_HOY], TRUE)"
+        color: "#1976D2"
+
+      - tipo: card_kpi
+        nombre: "Esta semana"
+        formula: "COUNTIF(Produccion[ES_ESTA_SEMANA], TRUE)"
+        color: "#388E3C"
+
+      - tipo: card_kpi
+        nombre: "Este mes"
+        formula: "COUNTIF(Produccion[ES_ESTE_MES], TRUE)"
+        color: "#F57C00"
+
+      - tipo: card_kpi
+        nombre: "Promedio/día"
+        formula: "ROUND(COUNTIF(Produccion[ES_ESTE_MES], TRUE) / MAX(1, DAY(TODAY())), 1)"
+        color: "#7B1FA2"
+
+      - tipo: card_kpi
+        nombre: "Total acumulado"
+        formula: "COUNT(Produccion[CHASIS])"
+        color: "#455A64"
+
+      # Fila 2: Gráfico modelos de hoy
+      - tipo: Bar Chart
+        nombre: "Por Modelo — Hoy"
+        slice: Produccion_Hoy
+        eje_x: MODELO
+        eje_y: COUNT
+        group_by: MODELO
+        orientacion: horizontal
+
+      # Fila 3: Tendencia diaria del mes
+      - tipo: Line Chart
+        nombre: "Producción Diaria — Mes"
+        slice: Produccion_Este_Mes
+        eje_x: FECHA
+        eje_y: COUNT
+        group_by: FECHA
+
+      # Fila 4: Color y Rueda del mes (lado a lado)
+      - tipo: Pie Chart
+        nombre: "Por Color — Mes"
+        slice: Produccion_Este_Mes
+        group_by: COLOR
+
+      - tipo: Pie Chart
+        nombre: "Aleación vs Rayos — Mes"
+        slice: Produccion_Este_Mes
+        group_by: RUEDA
+
+      # Fila 5: Modelos × Color (barras apiladas)
+      - tipo: Bar Chart
+        nombre: "Modelo × Color — Mes"
+        slice: Produccion_Este_Mes
+        eje_x: MODELO
+        series: COLOR
+        stack: true
+
+      # Fila 6: Producción semanal del año
+      - tipo: Bar Chart
+        nombre: "Producción Semanal — Año"
+        slice: Produccion_Este_Anio
+        eje_x: SEMANA
+        eje_y: COUNT
+        group_by: SEMANA
+
+      # Fila 7: Histórico mensual
+      - tipo: Bar Chart
+        nombre: "Histórico Mensual"
+        slice: Produccion_Todo
+        eje_x: MES_LABEL
+        eje_y: COUNT
+        group_by: MES_LABEL
+
+  # ──────────────────────────────────────────────────────────
+  # 5. HISTORIAL COMPLETO
+  # ──────────────────────────────────────────────────────────
+  - name: Historial
+    tipo: Table
+    slice: Produccion_Todo
+    posicion_nav: 5
+    icono: history
+    sort_by:
+      - columna: FECHA
+        orden: Descending
+      - columna: ID
+        orden: Descending
+    columnas_visibles:
+      - FECHA
+      - ID
+      - MODELO
+      - CHASIS
+      - NUM. MOTOR
+      - COLOR
+      - RUEDA
+
+  # ──────────────────────────────────────────────────────────
+  # 6. DETALLE (al tocar un registro en cualquier vista)
+  # ──────────────────────────────────────────────────────────
+  - name: Detalle Moto
     tipo: Detail
     tabla: Produccion
-    columnas_visibles:
+    posicion_nav: none   # solo se accede tocando un registro
+    campos_visibles:
       - FECHA
       - ID
       - CHASIS
@@ -89,40 +207,3 @@ vistas:
       - COD MOD
       - COD MOTOR
       - OBS
-
-  # ----------------------------------------------------------
-  # VISTA DASHBOARD: Resumen del día / semana
-  # ----------------------------------------------------------
-  dashboard:
-    nombre: "Resumen"
-    tipo: Dashboard
-    paneles:
-      - nombre: "Motos hoy"
-        formula: "COUNTIF(Produccion[FECHA], TODAY())"
-      - nombre: "Por modelo (hoy)"
-        tipo: Chart
-        tabla: Produccion
-        group_by: MODELO
-        filtro: "[FECHA] = TODAY()"
-      - nombre: "Por color (hoy)"
-        tipo: Chart
-        tabla: Produccion
-        group_by: COLOR
-        filtro: "[FECHA] = TODAY()"
-
-  # ----------------------------------------------------------
-  # VISTA BÚSQUEDA: Para verificar chasis o motor
-  # ----------------------------------------------------------
-  busqueda:
-    nombre: "Buscar"
-    tipo: Table
-    tabla: Produccion
-    search_columns:
-      - CHASIS
-      - NUM. MOTOR
-    columnas_visibles:
-      - FECHA
-      - CHASIS
-      - MODELO
-      - NUM. MOTOR
-      - COLOR
