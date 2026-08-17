@@ -123,7 +123,12 @@ data:
       Hoy, ¿cómo se genera la Orden de Producción (OP)? ¿Manual en
       papel/Excel, o ya existe en algún sistema?
     POR_QUE_IMPORTA: "Define si COD_OP se sigue cargando a mano en ORDENES_PRODUCCION o conviene importarlo desde otro lado."
-    ESTADO: "ABIERTA"
+    ESTADO: "RESPONDIDA"
+    RESPUESTA: >
+      No existe todavía — ni sistema ni proceso en papel/Excel.
+      Confirma el diseño actual: ORDENES_PRODUCCION es el lugar
+      donde nace la OP (form manual, COD_OP a mano), no hay nada que
+      importar de otro lado.
 
   - ID: 7
     CATEGORIA: "Orden de Producción"
