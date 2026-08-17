@@ -1,5 +1,15 @@
 # App de Producción de Motos — Guía Completa
 
+> **Decisión de arquitectura (confirmada):** todo este sistema se
+> construye sobre **Google Sheets + AppSheets**, sin backend propio
+> (sin Postgres, sin API REST, sin servidor). Se evaluó explícitamente
+> pasar a un backend a medida (ver comparación en el historial de
+> decisiones del proyecto) y se descartó por ahora: implica semanas
+> de desarrollo, infraestructura y mantenimiento permanente que no se
+> justifican al volumen actual (20-100 motos/día, sin ERP/WMS previo).
+> Revisar esta decisión solo si el volumen crece mucho o aparece una
+> necesidad que Sheets/AppSheets no pueda cubrir.
+
 ## ¿Qué hace esta app?
 
 El operario escanea con la cámara del celular el **código QR del número de chasis**.
