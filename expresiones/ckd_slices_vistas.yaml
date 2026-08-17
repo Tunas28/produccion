@@ -15,6 +15,15 @@ slices:
     filter: "[ESTADO_QC] = \"FALTANTES_CRITICOS\""
     descripcion: "Contenedores que NO deberían liberarse a producción — les falta una pieza crítica"
 
+  - name: Recepciones_Requieren_Reclamo
+    tabla: RECEPCIONES_CKD
+    filter: "[REQUIERE_RECLAMO] = TRUE"
+    descripcion: >
+      Confirmado (DUDAS_PENDIENTES #5): ante faltantes críticos se
+      abre un reclamo al proveedor (no se rechaza el contenedor).
+      Este slice son las recepciones con faltantes críticos donde
+      todavía no se marcó RECLAMO_ABIERTO — pendientes de gestionar.
+
   - name: Chequeo_Con_Faltante
     tabla: CHEQUEO_RECEPCION
     filter: "[FALTANTE] > 0"
@@ -62,6 +71,8 @@ vistas:
       - CANTIDAD_KITS_DECLARADA
       - ESTADO_QC
       - PIEZAS_FALTANTES
+      - RECLAMO_ABIERTO
+      - FECHA_RECLAMO
     formato_condicional:
       - columna: ESTADO_QC
         condicion: "[ESTADO_QC] = \"FALTANTES_CRITICOS\""
@@ -69,10 +80,18 @@ vistas:
       - columna: ESTADO_QC
         condicion: "[ESTADO_QC] = \"OK\""
         color_fondo: "#C8E6C9"
+      - columna: REQUIERE_RECLAMO
+        condicion: "[REQUIERE_RECLAMO] = TRUE"
+        color_fondo: "#FFE0B2"
+        descripcion: "Faltantes críticos y todavía no se marcó el reclamo como abierto"
     descripcion: >
       Al tocar una recepción se abre el detalle con la lista de
       CHEQUEO_RECEPCION relacionada (esperado / recibido / faltante
       / crítico por material), vía la referencia inversa de LOTE.
+      Confirmado (DUDAS_PENDIENTES #5): ante faltantes críticos NO se
+      rechaza el contenedor — se marca RECLAMO_ABIERTO y se sigue el
+      seguimiento acá hasta que el proveedor repone (movimiento
+      COMPLETO en Deposito, mismo LOTE).
 
   # ──────────────────────────────────────────────────────────
   # Crear Orden de Producción (Form)
@@ -116,6 +135,11 @@ vistas:
         nombre: "Recepciones con faltantes críticos"
         formula: "COUNT(Recepciones_Con_Faltantes_Criticos[LOTE])"
         color: "#D32F2F"
+
+      - tipo: card_kpi
+        nombre: "Reclamos pendientes de abrir"
+        formula: "COUNT(Recepciones_Requieren_Reclamo[LOTE])"
+        color: "#E65100"
 
       - tipo: card_kpi
         nombre: "OPs pendientes de picking"

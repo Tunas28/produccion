@@ -88,7 +88,8 @@ function crearHojaRecepcionesCKD(ss) {
 
   var encabezados = [
     'LOTE', 'FECHA', 'COD_OP', 'COD_MOD', 'CANTIDAD_KITS_DECLARADA',
-    'RESPONSABLE_QC', 'OBS', 'ESTADO_QC', 'PIEZAS_FALTANTES'
+    'RESPONSABLE_QC', 'OBS', 'RECLAMO_ABIERTO', 'FECHA_RECLAMO', 'OBS_RECLAMO',
+    'ESTADO_QC', 'PIEZAS_FALTANTES', 'REQUIERE_RECLAMO'
   ];
   escribirEncabezado(hoja, encabezados, '#1565C0');
   hoja.setFrozenRows(1);

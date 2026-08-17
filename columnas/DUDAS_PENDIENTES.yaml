@@ -107,7 +107,15 @@ data:
       práctica? ¿Se rechaza todo el contenedor, se acepta con una
       nota, se abre un reclamo al proveedor?
     POR_QUE_IMPORTA: "Define si hace falta un estado adicional en ESTADO_QC (ej. RECHAZADO) y una vista/acción para generar el reclamo."
-    ESTADO: "ABIERTA"
+    ESTADO: "RESPONDIDA"
+    RESPUESTA: >
+      Se abre un reclamo al proveedor (no se rechaza el contenedor).
+      Implementado: RECEPCIONES_CKD suma RECLAMO_ABIERTO, FECHA_RECLAMO,
+      OBS_RECLAMO y la columna virtual REQUIERE_RECLAMO (faltantes
+      críticos + reclamo todavía no abierto). Nueva vista/slice
+      "Recepciones_Requieren_Reclamo" y KPI en el Dashboard CKD. La
+      resolución (proveedor repone) se sigue registrando como
+      movimiento COMPLETO en Deposito con el mismo LOTE.
 
   - ID: 6
     CATEGORIA: "Orden de Producción"

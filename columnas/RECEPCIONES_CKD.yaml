@@ -73,6 +73,41 @@ columns:
     show: true
 
   # ──────────────────────────────────────────────────────────
+  # RECLAMO AL PROVEEDOR (confirmado, DUDAS_PENDIENTES #5): ante
+  # faltantes críticos, la práctica es abrir un reclamo al proveedor
+  # — no se rechaza el contenedor completo. La resolución (el
+  # proveedor repone lo faltante) se registra como siempre con un
+  # movimiento COMPLETO en Deposito, mismo LOTE.
+  # ──────────────────────────────────────────────────────────
+
+  - name: RECLAMO_ABIERTO
+    type: Yes/No
+    key: false
+    label: false
+    editable: true
+    required: false
+    show: true
+    initial_value: "FALSE"
+    description: "Marcar cuando se envía el reclamo formal al proveedor por las piezas faltantes"
+
+  - name: FECHA_RECLAMO
+    type: Date
+    key: false
+    label: false
+    editable: true
+    required: false
+    show: true
+
+  - name: OBS_RECLAMO
+    type: LongText
+    key: false
+    label: false
+    editable: true
+    required: false
+    show: true
+    description: "Número de reclamo, referencia del proveedor, respuesta, etc."
+
+  # ──────────────────────────────────────────────────────────
   # COLUMNAS VIRTUALES — estado de QC derivado de CHEQUEO_RECEPCION
   # ──────────────────────────────────────────────────────────
 
@@ -103,3 +138,13 @@ columns:
     show: true
     formula: >
       COUNT(SELECT(CHEQUEO_RECEPCION[ID_CHEQUEO], AND([LOTE] = [_THISROW].[LOTE], [FALTANTE] > 0)))
+
+  - name: REQUIERE_RECLAMO
+    type: Yes/No
+    key: false
+    label: false
+    editable: false
+    show: true
+    formula: >
+      AND([ESTADO_QC] = "FALTANTES_CRITICOS", [RECLAMO_ABIERTO] = FALSE)
+    description: "TRUE = hay faltantes críticos y todavía no se marcó el reclamo como abierto — alerta para el responsable de QC"
