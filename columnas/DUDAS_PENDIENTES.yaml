@@ -94,7 +94,11 @@ data:
       ¿Un contenedor siempre trae piezas para UN solo modelo, o vienen
       varios modelos mezclados en el mismo contenedor?
     POR_QUE_IMPORTA: "Si es mixto, RECEPCIONES_CKD.COD_MOD (un solo modelo por recepción) no alcanza y hay que rediseñar a nivel de líneas por modelo dentro de la misma recepción."
-    ESTADO: "ABIERTA"
+    ESTADO: "RESPONDIDA"
+    RESPUESTA: >
+      Un solo modelo por contenedor. Confirma el diseño actual:
+      RECEPCIONES_CKD.COD_MOD (un modelo por recepción) alcanza,
+      sin necesidad de rediseñar a nivel de líneas por modelo.
 
   - ID: 5
     CATEGORIA: "Recepción CKD"
