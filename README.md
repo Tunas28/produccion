@@ -1,14 +1,20 @@
 # App de Producción de Motos — Guía Completa
 
-> **Decisión de arquitectura (confirmada):** todo este sistema se
-> construye sobre **Google Sheets + AppSheets**, sin backend propio
-> (sin Postgres, sin API REST, sin servidor). Se evaluó explícitamente
-> pasar a un backend a medida (ver comparación en el historial de
-> decisiones del proyecto) y se descartó por ahora: implica semanas
-> de desarrollo, infraestructura y mantenimiento permanente que no se
-> justifican al volumen actual (20-100 motos/día, sin ERP/WMS previo).
-> Revisar esta decisión solo si el volumen crece mucho o aparece una
-> necesidad que Sheets/AppSheets no pueda cubrir.
+> **Decisión de arquitectura (ACTUALIZADA — revierte la anterior):**
+> el volumen real confirmado es **6.000 motos + 6.000 bicicletas +
+> 4.000 ventiladores CKD por MES** (~400 unidades/día combinadas),
+> muy por encima del estimado inicial (20-100 motos/día) sobre el que
+> se había decidido quedarse solo en Google Sheets + AppSheets. A ese
+> volumen, Sheets/AppSheets deja de ser sostenible (fórmulas lentas,
+> escritura concurrente de varios operarios, filas creciendo decenas
+> de miles por mes).
+>
+> **Se decidió migrar a un backend propio** (PostgreSQL vía Supabase +
+> frontend PWA), diseño completo en [`backend/DISENO.md`](backend/DISENO.md).
+> Todo lo documentado en este README (columnas, validaciones, KPIs,
+> vistas) sigue siendo válido como **modelo de datos de referencia** —
+> es lo que se está migrando a la base real — pero la implementación
+> final ya no va a ser AppSheet.
 
 ## ¿Qué hace esta app?
 
@@ -423,6 +429,9 @@ sheets/
   setup.gs             — Script para crear las hojas de Producción
   setup_deposito.gs    — Script para crear las hojas de Depósito de Materia Prima
   setup_ckd.gs         — [DISEÑO] Script para crear las hojas de CKD/BOM/Kitting + DUDAS_PENDIENTES
+
+backend/
+  DISENO.md            — [NUEVO] Diseño del backend propio (Postgres/Supabase) que reemplaza a Sheets/AppSheets
 ```
 
 ---

@@ -207,7 +207,14 @@ data:
       filas al año, y las fórmulas SUM(SELECT(...)) se ponen lentas en
       Google Sheets a partir de cierto volumen.
     POR_QUE_IMPORTA: "¿Está bien archivar (mover a una hoja histórica) los movimientos de más de N meses, o necesitan todo el historial siempre 'vivo' para consultas? Define si hace falta un proceso de archivado periódico."
-    ESTADO: "ABIERTA"
+    ESTADO: "RESPONDIDA"
+    RESPUESTA: >
+      El volumen real es 6.000 motos + 6.000 bicis + 4.000
+      ventiladores POR MES (~400 unidades/día) — mucho más alto que
+      el supuesto original. Esto ya no se resuelve archivando filas
+      en Sheets: se decidió migrar a un backend propio (PostgreSQL
+      vía Supabase). Ver diseño completo en backend/DISENO.md. La
+      decisión de arquitectura del README principal fue actualizada.
 
   - ID: 13
     CATEGORIA: "Catálogo de Productos"
