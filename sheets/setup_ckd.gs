@@ -2,11 +2,16 @@
  * ============================================================
  * SETUP AUTOMÁTICO — Recepción CKD / BOM / Kitting (DISEÑO)
  * ============================================================
- * ⚠ Este sistema es un DISEÑO/BORRADOR. Antes de usarlo en
- *   producción, completar la hoja "DUDAS_PENDIENTES" que este
- *   script también crea — varias decisiones (piezas críticas,
- *   contenedores multi-modelo, líneas de ensamble, etc.) todavía
- *   no están confirmadas y pueden cambiar el diseño de las tablas.
+ * ⚠ ARQUITECTURA CAMBIADA: se decidió migrar a un backend propio
+ *   (PostgreSQL/Supabase) por el volumen real del negocio — ver
+ *   backend/DISENO.md. Este script de AppSheet queda como
+ *   REFERENCIA del modelo de datos original, no como el plan de
+ *   implementación final.
+ *
+ * ⚠ La hoja DUDAS_PENDIENTES que arma este script tiene solo las
+ *   primeras 15 preguntas y puede estar desactualizada en sus
+ *   respuestas — columnas/DUDAS_PENDIENTES.yaml es la fuente de
+ *   verdad (ya tiene 18 preguntas, la mayoría respondidas).
  *
  * CÓMO USAR:
  *  1. Abrir el mismo Google Sheets "Produccion"

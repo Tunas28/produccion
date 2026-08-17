@@ -24,6 +24,7 @@ columns:
       - "OEE / paradas de línea"
       - "Escala / performance"
       - "Catálogo de Productos"
+      - "Backend / WMS"
 
   - name: PREGUNTA
     type: LongText
@@ -253,3 +254,47 @@ data:
       de tocar código?
     POR_QUE_IMPORTA: "Evita fabricar 24 modelos y sus BOM inventados de la nada — mejor confirmar alcance antes de generar datos de ejemplo que después haya que descartar."
     ESTADO: "ABIERTA"
+
+  - ID: 16
+    CATEGORIA: "Backend / WMS"
+    PREGUNTA: >
+      El "CHASIS" que se escanea hoy, ¿es un VIN real regulado (el que
+      se usa para patentar/registrar el vehículo ante el gobierno), o
+      es un número interno de fábrica sin validez legal?
+    POR_QUE_IMPORTA: "Define si generar_numero_chasis() necesita el formato ISO 3779 (17 caracteres + dígito verificador) o alcanza con la convención simple actual (prefijo + correlativo)."
+    ESTADO: "RESPONDIDA"
+    RESPUESTA: >
+      "Viene en cajas sin números" — los chasis llegan vírgenes, sin
+      numeración de fábrica. Confirma que el número se asigna
+      internamente (ver backend/DISENO.md sección 5), pero NO aclara
+      si necesita validez legal de VIN — se implementó la versión
+      simple por ahora; revisar si en algún momento se confirma que sí.
+
+  - ID: 17
+    CATEGORIA: "Backend / WMS"
+    PREGUNTA: >
+      Dentro de un contenedor (ya un solo modelo por contenedor,
+      pregunta #4), ¿los materiales vienen sueltos/mezclados, o en
+      bultos separados que conviene trackear aparte (ej. "este pallet
+      son 10 chasis", "esta caja son 4 motores")?
+    POR_QUE_IMPORTA: "Define si hace falta un nivel intermedio (bulto/pallet) entre LOTE (contenedor) y material en el nuevo backend."
+    ESTADO: "RESPONDIDA"
+    RESPUESTA: >
+      Sí, hay bultos que conviene trackear aparte. Implementado en
+      backend/DISENO.md: tabla `bultos` entre `recepciones_ckd` y
+      `deposito_movimientos`.
+
+  - ID: 18
+    CATEGORIA: "Backend / WMS"
+    PREGUNTA: >
+      ¿Hay planes reales (presupuesto, decisión tomada) de comprar
+      lectores de código de barras dedicados (PDA tipo Honeywell/
+      Zebra) para los operarios, o el celular sigue siendo el
+      dispositivo?
+    POR_QUE_IMPORTA: "Cambia la arquitectura del frontend: PWA en celular (simple) vs. SDK de PDA dedicada + impresión térmica industrial (mucho más trabajo y costo de hardware)."
+    ESTADO: "RESPONDIDA"
+    RESPUESTA: >
+      Celular por ahora. Confirma el diseño elegido en backend/DISENO.md
+      (PWA React/Vite en el celular) — se descarta la infraestructura
+      de PDA dedicada + impresora térmica industrial (ver sección 9,
+      "Fuera de alcance").
