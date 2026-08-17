@@ -135,7 +135,11 @@ data:
     PREGUNTA: >
       ¿Cuántas líneas de ensamble simultáneas hay en la planta?
     POR_QUE_IMPORTA: "Si hay más de una línea, PICKING_OP necesitaría un campo LINEA_DESTINO para que el operario sepa a qué línea llevar cada kit."
-    ESTADO: "ABIERTA"
+    ESTADO: "RESPONDIDA"
+    RESPUESTA: >
+      1 sola línea por ahora. Confirma el diseño actual: no hace
+      falta LINEA_DESTINO en PICKING_OP. Si en el futuro se suma una
+      segunda línea, ahí sí agregar el campo.
 
   - ID: 8
     CATEGORIA: "Depósito / Ubicación"
