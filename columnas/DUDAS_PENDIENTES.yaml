@@ -192,7 +192,13 @@ data:
       que menciona el material de referencia: ¿hoy miden tiempos de
       parada de alguna forma (manual, cronómetro, otro sistema)?
     POR_QUE_IMPORTA: "Google Sheets/AppSheets no sirve para captura en tiempo real de eventos de máquina. Si esto se necesita de verdad, probablemente requiera otra herramienta o un módulo aparte — no está incluido en este diseño."
-    ESTADO: "ABIERTA"
+    ESTADO: "RESPONDIDA"
+    RESPUESTA: >
+      No, no miden nada de eso todavía. Confirma que OEE queda FUERA
+      de alcance de este sistema por ahora — no se implementa nada
+      relacionado. Si en el futuro empiezan a medir paradas de alguna
+      forma manual simple, se puede evaluar agregar algo liviano;
+      captura en tiempo real seguiría necesitando otra herramienta.
 
   - ID: 12
     CATEGORIA: "Escala / performance"
