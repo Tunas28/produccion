@@ -16,6 +16,13 @@
 # ⚠ BOM de EJEMPLO — completar con la lista real de materiales
 #   por modelo (hoy solo tiene 2-3 piezas de muestra por modelo,
 #   ver pregunta abierta en DUDAS_PENDIENTES sobre nivel de detalle).
+#
+# CRITERIO CONFIRMADO para CRITICO (DUDAS_PENDIENTES #1): "todo lo
+# que si falta no se puede armar la moto" — o sea, CRITICO=TRUE para
+# cualquier pieza obligatoria para el armado (la mayoría), y
+# CRITICO=FALSE solo para lo opcional/no bloqueante. Los valores
+# CRITICO de abajo son de EJEMPLO — revisar cada uno con este
+# criterio al cargar el BOM real.
 
 columns:
 

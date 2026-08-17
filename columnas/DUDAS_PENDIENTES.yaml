@@ -52,7 +52,14 @@ data:
       ¿Qué se considera "pieza crítica"? ¿Lo definís vos material por
       material, o hay ya un criterio/checklist de calidad de la empresa?
     POR_QUE_IMPORTA: "Define cómo se completa la columna CRITICO en BOM_REF."
-    ESTADO: "ABIERTA"
+    ESTADO: "RESPONDIDA"
+    RESPUESTA: >
+      "Todo lo que si falta no se puede armar la moto" — es decir,
+      CRITICO = TRUE para cualquier material obligatorio para el
+      armado (prácticamente todo lo estructural/funcional); CRITICO =
+      FALSE solo para lo opcional/no bloqueante (ej. accesorios,
+      cosmética). Con este criterio, la mayoría de las líneas de
+      BOM_REF probablemente deberían quedar en CRITICO=TRUE.
 
   - ID: 2
     CATEGORIA: "BOM / Piezas críticas"
