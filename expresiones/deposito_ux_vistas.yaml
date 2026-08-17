@@ -1,0 +1,210 @@
+# ============================================================
+# VISTAS Y UX - AppSheets
+# Configurar en: UX → Views
+# Sistema: Depósito de Materia Prima
+# ============================================================
+
+# Orden de navegación recomendado (barra inferior de la app):
+# [ Registrar Mov. ] [ Stock Actual ] [ Buscar ] [ Dashboard ] [ Historial ]
+
+vistas:
+
+  # ──────────────────────────────────────────────────────────
+  # 1. REGISTRAR MOVIMIENTO (vista principal del depósito)
+  # ──────────────────────────────────────────────────────────
+  - name: Registrar Movimiento
+    tipo: Form
+    tabla: Deposito
+    posicion_nav: 1
+    icono: add_circle
+    descripcion: >
+      Formulario de carga. Se elige el material, el tipo de movimiento
+      (entrada, salida, completo, incompleto, intervenido, reclamado)
+      y la cantidad.
+    campos_visibles:
+      - FECHA           # editable, valor inicial = hoy
+      - COD_MATERIAL    # editable, ref a MATERIALES_REF
+      - MATERIAL        # solo lectura, calculado automáticamente
+      - UNIDAD          # solo lectura, calculado automáticamente
+      - TIPO_MOVIMIENTO # editable, enum
+      - CANTIDAD        # editable, required
+      - LOTE            # editable, opcional (recomendado en estados)
+      - PROVEEDOR_DESTINO # editable, opcional
+      - RESPONSABLE     # editable, opcional
+      - OBS             # editable, opcional
+    campos_ocultos:
+      - ID
+      - EFECTO_STOCK
+      - SEMANA
+      - MES
+      - AÑO
+      - MES_LABEL
+      - ES_HOY
+      - ES_ESTA_SEMANA
+      - ES_ESTE_MES
+
+  # ──────────────────────────────────────────────────────────
+  # 2. STOCK ACTUAL (tabla MATERIALES_REF con rollup de Deposito)
+  # ──────────────────────────────────────────────────────────
+  - name: Stock Actual
+    tipo: Table
+    tabla: MATERIALES_REF
+    posicion_nav: 2
+    icono: inventory
+    sort_by:
+      - columna: MATERIAL
+        orden: Ascending
+    columnas_visibles:
+      - COD_MATERIAL
+      - MATERIAL
+      - UNIDAD
+      - STOCK_ACTUAL
+      - STOCK_MINIMO
+      - BAJO_MINIMO
+    formato_condicional:
+      - columna: BAJO_MINIMO
+        condicion: "[BAJO_MINIMO] = TRUE"
+        color_fondo: "#FFCDD2"
+        descripcion: "Resalta en rojo los materiales bajo el stock mínimo"
+    header_formula: >
+      CONCATENATE("Bajo mínimo: ", COUNTIF(MATERIALES_REF[BAJO_MINIMO], TRUE))
+
+  # ──────────────────────────────────────────────────────────
+  # 3. BUSCAR (verificar material, lote o movimiento existente)
+  # ──────────────────────────────────────────────────────────
+  - name: Buscar
+    tipo: Table
+    slice: Deposito_Todo
+    posicion_nav: 3
+    icono: search
+    search_columns:
+      - COD_MATERIAL
+      - MATERIAL
+      - LOTE
+    columnas_visibles:
+      - FECHA
+      - MATERIAL
+      - TIPO_MOVIMIENTO
+      - CANTIDAD
+      - LOTE
+
+  # ──────────────────────────────────────────────────────────
+  # 4. DASHBOARD (supervisor / gerencia)
+  # ──────────────────────────────────────────────────────────
+  - name: Dashboard Depósito
+    tipo: Dashboard
+    posicion_nav: 4
+    icono: dashboard
+    paneles:
+
+      # Fila 1: KPIs en cards
+      - tipo: card_kpi
+        nombre: "Entradas del mes"
+        formula: >
+          SUM(SELECT(Deposito[CANTIDAD], AND([ES_ESTE_MES] = TRUE, [TIPO_MOVIMIENTO] = "ENTRADA")))
+        color: "#1976D2"
+
+      - tipo: card_kpi
+        nombre: "Salidas del mes"
+        formula: >
+          SUM(SELECT(Deposito[CANTIDAD], AND([ES_ESTE_MES] = TRUE, [TIPO_MOVIMIENTO] = "SALIDA")))
+        color: "#F57C00"
+
+      - tipo: card_kpi
+        nombre: "Incompletos del mes"
+        formula: "COUNTIFS(Deposito[TIPO_MOVIMIENTO], \"INCOMPLETO\", Deposito[ES_ESTE_MES], TRUE)"
+        color: "#C62828"
+
+      - tipo: card_kpi
+        nombre: "Intervenidos del mes"
+        formula: "COUNTIFS(Deposito[TIPO_MOVIMIENTO], \"INTERVENIDO\", Deposito[ES_ESTE_MES], TRUE)"
+        color: "#7B1FA2"
+
+      - tipo: card_kpi
+        nombre: "Reclamados del mes"
+        formula: "COUNTIFS(Deposito[TIPO_MOVIMIENTO], \"RECLAMADO\", Deposito[ES_ESTE_MES], TRUE)"
+        color: "#455A64"
+
+      - tipo: card_kpi
+        nombre: "Materiales bajo mínimo"
+        formula: "COUNTIF(MATERIALES_REF[BAJO_MINIMO], TRUE)"
+        color: "#D32F2F"
+
+      # Fila 2: Stock actual por material
+      - tipo: Bar Chart
+        nombre: "Stock Actual por Material"
+        tabla: MATERIALES_REF
+        eje_x: MATERIAL
+        eje_y: STOCK_ACTUAL
+        orientacion: horizontal
+
+      # Fila 3: Entradas vs salidas por día del mes
+      - tipo: Line Chart
+        nombre: "Entradas vs Salidas por Día"
+        slice: Deposito_Este_Mes
+        eje_x: FECHA
+        eje_y: CANTIDAD
+        series: TIPO_MOVIMIENTO
+
+      # Fila 4: Distribución por tipo de movimiento del mes
+      - tipo: Pie Chart
+        nombre: "Por Tipo de Movimiento — Mes"
+        slice: Deposito_Este_Mes
+        group_by: TIPO_MOVIMIENTO
+
+      # Fila 5: Material × Tipo de movimiento (barras apiladas)
+      - tipo: Bar Chart
+        nombre: "Material × Tipo — Mes"
+        slice: Deposito_Este_Mes
+        eje_x: MATERIAL
+        series: TIPO_MOVIMIENTO
+        stack: true
+
+      # Fila 6: Histórico mensual
+      - tipo: Bar Chart
+        nombre: "Histórico Mensual"
+        slice: Deposito_Todo
+        eje_x: MES_LABEL
+        series: TIPO_MOVIMIENTO
+
+  # ──────────────────────────────────────────────────────────
+  # 5. HISTORIAL COMPLETO
+  # ──────────────────────────────────────────────────────────
+  - name: Historial Depósito
+    tipo: Table
+    slice: Deposito_Todo
+    posicion_nav: 5
+    icono: history
+    sort_by:
+      - columna: FECHA
+        orden: Descending
+      - columna: ID
+        orden: Descending
+    columnas_visibles:
+      - FECHA
+      - ID
+      - MATERIAL
+      - TIPO_MOVIMIENTO
+      - CANTIDAD
+      - UNIDAD
+      - LOTE
+      - PROVEEDOR_DESTINO
+
+  # ──────────────────────────────────────────────────────────
+  # 6. DETALLE (al tocar un registro en cualquier vista)
+  # ──────────────────────────────────────────────────────────
+  - name: Detalle Movimiento
+    tipo: Detail
+    tabla: Deposito
+    posicion_nav: none   # solo se accede tocando un registro
+    campos_visibles:
+      - FECHA
+      - ID
+      - MATERIAL
+      - UNIDAD
+      - TIPO_MOVIMIENTO
+      - CANTIDAD
+      - LOTE
+      - PROVEEDOR_DESTINO
+      - RESPONSABLE
+      - OBS

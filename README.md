@@ -379,16 +379,179 @@ Probar uno de cada modelo para verificar el mapeo automático:
 
 ```
 columnas/
-  PRODUCCION.yaml       — Todas las columnas con fórmulas y validaciones
-  MODELOS_REF.yaml      — Tabla de referencia de modelos
+  PRODUCCION.yaml           — Todas las columnas con fórmulas y validaciones
+  MODELOS_REF.yaml          — Tabla de referencia de modelos
+  DEPOSITO.yaml             — Columnas del kardex de movimientos de materia prima
+  MATERIALES_REF.yaml       — Tabla de referencia de materiales y stock
 
 expresiones/
   formulas_calculadas.yaml  — Fórmulas IFS para auto-completar desde el chasis
   validaciones.yaml         — Valid_if para unicidad de chasis y motor
   kpis.yaml                 — KPIs y configuración de los 7 gráficos
   slices.yaml               — Filtros de datos (hoy, semana, mes, año, todo)
-  ux_vistas.yaml            — Vistas, navegación y dashboard completo
+  ux_vistas.yaml             — Vistas, navegación y dashboard completo
+
+  deposito_formulas_calculadas.yaml — Fórmulas de lookup, stock y rollup
+  deposito_validaciones.yaml        — Valid_if del depósito
+  deposito_kpis.yaml                — KPIs y gráficos del depósito
+  deposito_slices.yaml              — Filtros de datos del depósito (incluye "mes")
+  deposito_ux_vistas.yaml           — Vistas, navegación y dashboard del depósito
+
+sheets/
+  setup.gs             — Script para crear las hojas de Producción
+  setup_deposito.gs    — Script para crear las hojas de Depósito de Materia Prima
 ```
+
+---
+
+## Sistema 2: Depósito de Materia Prima
+
+### ¿Qué hace?
+
+Lleva el **kardex** (historial de movimientos) de los materiales del depósito:
+quién ingresó qué material, cuánto salió a producción, y el estado de cada
+lote (completo, incompleto, intervenido o reclamado). Con eso calcula el
+**stock actual** de cada material en tiempo real y alerta cuando cae por
+debajo del mínimo.
+
+### ¿Qué necesitamos para crear un "mes de depósito"?
+
+Un "mes de depósito" no es una hoja aparte por mes: es el **filtro por mes**
+(slice `Deposito_Este_Mes`, columnas virtuales `MES` / `AÑO` / `MES_LABEL`)
+aplicado sobre una única tabla `Deposito` que acumula todos los movimientos.
+Para tenerlo funcionando hace falta:
+
+1. **La tabla `MATERIALES_REF`** — catálogo de materiales (código, nombre,
+   categoría, unidad, stock mínimo). Sin esto no se puede validar ni
+   calcular stock. Ver `columnas/MATERIALES_REF.yaml`.
+2. **La tabla `Deposito`** — un registro por cada movimiento, con
+   `FECHA`, `COD_MATERIAL`, `TIPO_MOVIMIENTO` (ENTRADA, SALIDA, COMPLETO,
+   INCOMPLETO, INTERVENIDO, RECLAMADO) y `CANTIDAD`. Ver `columnas/DEPOSITO.yaml`.
+3. **Las columnas calculadas `MES`, `AÑO`, `MES_LABEL` y `ES_ESTE_MES`**
+   sobre `FECHA` — son las que agrupan los movimientos por mes.
+4. **El slice `Deposito_Este_Mes`** (y los slices por tipo de movimiento del
+   mes) — alimentan los KPIs y gráficos mensuales.
+5. **La columna de rollup `STOCK_ACTUAL`** en `MATERIALES_REF` — suma/resta
+   los movimientos de `Deposito` (columna `EFECTO_STOCK`) para saber cuánto
+   queda de cada material, sin depender de "cerrar" el mes.
+
+En otras palabras: cargando movimientos día a día en `Deposito`, el "mes de
+depósito" se arma solo — no requiere ningún paso manual de cierre mensual.
+
+### PASO A PASO — Configuración en Google Sheets
+
+**Paso 1.** En el mismo Google Sheets `Produccion` (o uno nuevo), crear la
+hoja `MATERIALES_REF` con los encabezados y datos de ejemplo:
+
+| COD_MATERIAL | MATERIAL | CATEGORIA | UNIDAD | STOCK_MINIMO |
+|---|---|---|---|---|
+| CH01 | Chasis | Estructura | UNIDAD | 20 |
+| MT01 | Motor | Motor | UNIDAD | 20 |
+| PIN01 | Pintura | Pintura | LITRO | 50 |
+| NEU01 | Neumático | Rodado | UNIDAD | 40 |
+| LLA01 | Llanta/Rin | Rodado | UNIDAD | 40 |
+| BAT01 | Batería | Eléctrico | UNIDAD | 20 |
+| CAB01 | Cableado | Eléctrico | METRO | 200 |
+| TOR01 | Tornillería | Insumos | KG | 30 |
+| ASI01 | Asiento | Carrocería | UNIDAD | 20 |
+| TAN01 | Tanque combustible | Carrocería | UNIDAD | 20 |
+
+> ⚠ Estos son materiales de **ejemplo**. Reemplazar/ampliar con los
+> materiales reales del depósito.
+
+**Paso 2.** Crear la hoja `Deposito` con estos encabezados en la fila 1:
+
+```
+FECHA | ID | COD_MATERIAL | MATERIAL | UNIDAD | TIPO_MOVIMIENTO | CANTIDAD | LOTE | PROVEEDOR_DESTINO | RESPONSABLE | OBS | EFECTO_STOCK | SEMANA | MES | AÑO | MES_LABEL | ES_HOY | ES_ESTA_SEMANA | ES_ESTE_MES
+```
+
+**Paso 3.** También se puede generar todo automáticamente con Apps Script:
+pegar `sheets/setup_deposito.gs` y correr `crearEstructuraDeposito()`
+(crea ambas hojas y carga movimientos de prueba).
+
+### Configurar columnas en AppSheets (Data → Tables → Deposito → Columns)
+
+#### Columnas que el usuario INGRESA:
+
+| Columna | Tipo | Required | Notas |
+|---|---|---|---|
+| FECHA | Date | Sí | Initial value: `TODAY()` |
+| COD_MATERIAL | Ref → MATERIALES_REF | Sí | ver Valid_if abajo |
+| TIPO_MOVIMIENTO | Enum | Sí | ENTRADA, SALIDA, COMPLETO, INCOMPLETO, INTERVENIDO, RECLAMADO |
+| CANTIDAD | Number | Sí | Valid_if: `[CANTIDAD] > 0` |
+| LOTE | Text | No | Recomendado para trazar COMPLETO/INCOMPLETO/INTERVENIDO/RECLAMADO |
+| PROVEEDOR_DESTINO | Text | No | Proveedor (entrada) o destino/área (salida) |
+| RESPONSABLE | Text | No | — |
+| OBS | LongText | No | — |
+
+#### Columnas AUTO-CALCULADAS (App formula, Editable=OFF):
+
+**MATERIAL:** `LOOKUP([COD_MATERIAL], "MATERIALES_REF", "COD_MATERIAL", "MATERIAL")`
+
+**UNIDAD:** `LOOKUP([COD_MATERIAL], "MATERIALES_REF", "COD_MATERIAL", "UNIDAD")`
+
+**ID:** `MAXROW("Deposito", "ID") + 1`
+
+**EFECTO_STOCK** (cantidad con signo, base del stock):
+```
+IFS(
+  [TIPO_MOVIMIENTO] = "ENTRADA", [CANTIDAD],
+  [TIPO_MOVIMIENTO] = "COMPLETO", [CANTIDAD],
+  [TIPO_MOVIMIENTO] = "SALIDA", -[CANTIDAD],
+  [TIPO_MOVIMIENTO] = "INCOMPLETO", -[CANTIDAD],
+  [TIPO_MOVIMIENTO] = "INTERVENIDO", -[CANTIDAD],
+  [TIPO_MOVIMIENTO] = "RECLAMADO", -[CANTIDAD],
+  TRUE, 0
+)
+```
+> Convención por defecto: ENTRADA y COMPLETO suman stock; SALIDA, INCOMPLETO,
+> INTERVENIDO y RECLAMADO restan. Ajustar si el proceso real es distinto.
+
+#### Columnas VIRTUALES para KPIs (igual patrón que Producción):
+
+**SEMANA:** `WEEKNUM([FECHA])` · **MES:** `MONTH([FECHA])` · **AÑO:** `YEAR([FECHA])`
+**MES_LABEL:** `TEXT([FECHA], "MMM YYYY")` · **ES_HOY:** `[FECHA] = TODAY()`
+**ES_ESTA_SEMANA** y **ES_ESTE_MES:** igual fórmula que en `Producción`, ver `columnas/DEPOSITO.yaml`.
+
+#### En la tabla `MATERIALES_REF` (rollup desde Deposito):
+
+**STOCK_ACTUAL:**
+```
+SUM(SELECT(Deposito[EFECTO_STOCK], [COD_MATERIAL] = [_THISROW].[COD_MATERIAL]))
+```
+
+**BAJO_MINIMO:** `[STOCK_ACTUAL] < [STOCK_MINIMO]`
+
+### Validaciones (Valid_if)
+
+- **COD_MATERIAL:** `IN([COD_MATERIAL], MATERIALES_REF[COD_MATERIAL])` — el material debe existir.
+- **CANTIDAD:** `[CANTIDAD] > 0`.
+
+Ver el detalle completo, incluida la recomendación de `LOTE`, en
+`expresiones/deposito_validaciones.yaml`.
+
+### Slices, KPIs, gráficos y vistas
+
+Ver `expresiones/deposito_slices.yaml`, `expresiones/deposito_kpis.yaml` y
+`expresiones/deposito_ux_vistas.yaml` para la configuración completa:
+slice `Deposito_Este_Mes` (el "mes de depósito"), slices por tipo de
+movimiento del mes, KPIs de entradas/salidas/incompletos/intervenidos/
+reclamados del mes, gráfico de stock actual por material, y las vistas
+"Registrar Movimiento", "Stock Actual", "Buscar", "Dashboard Depósito" e
+"Historial Depósito".
+
+### Prueba rápida
+
+1. Cargar el catálogo `MATERIALES_REF` y correr `crearEstructuraDeposito()`
+   (o cargar manualmente).
+2. Registrar una ENTRADA de 50 unidades de `CH01` (Chasis).
+3. Ver la vista **Stock Actual**: `CH01` debe mostrar `STOCK_ACTUAL = 50`.
+4. Registrar una SALIDA de 10 unidades de `CH01`.
+5. Verificar que `STOCK_ACTUAL` bajó a 40 y que el KPI "Salidas del mes"
+   del Dashboard muestra 10.
+6. Registrar una entrada baja (por ejemplo `STOCK_MINIMO = 20` y llevar el
+   stock por debajo) y verificar que el material aparece resaltado en
+   **Stock Actual** y sumado en el KPI "Materiales bajo mínimo".
 
 ---
 

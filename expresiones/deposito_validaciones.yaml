@@ -1,0 +1,68 @@
+# ============================================================
+# EXPRESIONES DE VALIDACIÓN - AppSheets
+# Tabla: DEPOSITO
+# ============================================================
+
+validaciones:
+
+  # ----------------------------------------------------------
+  # COD_MATERIAL: debe existir en MATERIALES_REF
+  # ----------------------------------------------------------
+  material_existente:
+    columna: "COD_MATERIAL"
+    tipo: "Valid_if"
+    expresion: >
+      IN([COD_MATERIAL], MATERIALES_REF[COD_MATERIAL])
+    mensaje_error: "⚠ El material no está dado de alta en MATERIALES_REF."
+
+  # ----------------------------------------------------------
+  # CANTIDAD: debe ser mayor a cero
+  # ----------------------------------------------------------
+  cantidad_positiva:
+    columna: "CANTIDAD"
+    tipo: "Valid_if"
+    expresion: >
+      [CANTIDAD] > 0
+    mensaje_error: "⚠ La cantidad debe ser mayor a cero."
+
+  # ----------------------------------------------------------
+  # TIPO_MOVIMIENTO: obligatorio, uno de los 6 estados soportados
+  # ----------------------------------------------------------
+  tipo_movimiento_valido:
+    columna: "TIPO_MOVIMIENTO"
+    tipo: "Valid_if"
+    expresion: >
+      IN([TIPO_MOVIMIENTO], {"ENTRADA", "SALIDA", "COMPLETO", "INCOMPLETO", "INTERVENIDO", "RECLAMADO"})
+    mensaje_error: "⚠ Tipo de movimiento inválido."
+
+  # ----------------------------------------------------------
+  # LOTE: recomendado cuando el movimiento describe el estado
+  # de un ingreso previo (para poder rastrearlo)
+  # ----------------------------------------------------------
+  lote_recomendado_en_estados:
+    columna: "LOTE"
+    tipo: "Valid_if (advertencia, no bloqueante)"
+    expresion: >
+      OR(
+        NOT(IN([TIPO_MOVIMIENTO], {"COMPLETO", "INCOMPLETO", "INTERVENIDO", "RECLAMADO"})),
+        LEN(TRIM([LOTE])) > 0
+      )
+    mensaje_error: "⚠ Se recomienda indicar el LOTE para poder trazar este movimiento hasta su ingreso original."
+    nota: >
+      Dejar como Valid_if normal la vuelve obligatoria (bloqueante).
+      Si se prefiere solo una advertencia, usar esta expresión como
+      condición de formato condicional en vez de Valid_if.
+
+  # ----------------------------------------------------------
+  # STOCK NO NEGATIVO: alerta si un material queda con stock
+  # negativo tras registrar el movimiento (revisar en la vista
+  # "Stock Actual" — AppSheets no puede validar SUM en tiempo real
+  # de forma confiable dentro del mismo valid_if, por eso se deja
+  # como chequeo posterior via la columna BAJO_MINIMO / STOCK_ACTUAL
+  # de MATERIALES_REF)
+  # ----------------------------------------------------------
+  stock_no_negativo_nota:
+    columna: "CANTIDAD"
+    tipo: "Revisión manual / Dashboard"
+    expresion: "MATERIALES_REF[STOCK_ACTUAL] < 0"
+    mensaje_error: "⚠ Revisar: el material quedó con stock negativo. Verificar el historial de movimientos."

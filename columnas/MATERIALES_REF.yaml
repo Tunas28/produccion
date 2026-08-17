@@ -1,0 +1,128 @@
+# ============================================================
+# TABLA DE REFERENCIA: MATERIALES_REF
+# Usada para lookup, validación y stock desde DEPOSITO
+# Esta tabla se edita solo para dar de alta nuevos materiales
+# ============================================================
+
+# Columnas de la hoja MATERIALES_REF en Google Sheets:
+#   COD_MATERIAL | MATERIAL           | CATEGORIA   | UNIDAD | STOCK_MINIMO
+#   -------------|--------------------|-------------|--------|--------------
+#   CH01         | Chasis             | Estructura  | UNIDAD | 20
+#   MT01         | Motor              | Motor       | UNIDAD | 20
+#   PIN01        | Pintura            | Pintura     | LITRO  | 50
+#   NEU01        | Neumático          | Rodado      | UNIDAD | 40
+#   LLA01        | Llanta/Rin         | Rodado      | UNIDAD | 40
+#   BAT01        | Batería            | Eléctrico   | UNIDAD | 20
+#   CAB01        | Cableado           | Eléctrico   | METRO  | 200
+#   TOR01        | Tornillería        | Insumos     | KG     | 30
+#   ASI01        | Asiento            | Carrocería  | UNIDAD | 20
+#   TAN01        | Tanque combustible | Carrocería  | UNIDAD | 20
+#
+# ⚠ Estos son materiales de EJEMPLO. Reemplazar/ampliar la lista
+#   con los materiales reales del depósito antes de producción.
+
+columns:
+
+  - name: COD_MATERIAL
+    type: Text
+    key: true
+    label: true
+
+  - name: MATERIAL
+    type: Text
+
+  - name: CATEGORIA
+    type: Text
+
+  - name: UNIDAD
+    type: Enum
+    enum_values:
+      - UNIDAD
+      - KG
+      - LITRO
+      - METRO
+
+  - name: STOCK_MINIMO
+    type: Number
+    description: "Umbral para la alerta de stock bajo (ver STOCK_ACTUAL / BAJO_MINIMO)"
+
+  # ──────────────────────────────────────────────────────────
+  # COLUMNAS VIRTUALES — calculan el stock a partir del historial
+  # de movimientos en la tabla DEPOSITO (kardex)
+  # ──────────────────────────────────────────────────────────
+
+  - name: STOCK_ACTUAL
+    type: Number
+    editable: false
+    show: true
+    formula: >
+      SUM(SELECT(Deposito[EFECTO_STOCK], [COD_MATERIAL] = [_THISROW].[COD_MATERIAL]))
+    description: "Suma de entradas menos salidas/incompletos/intervenidos/reclamados registrados en Deposito"
+
+  - name: BAJO_MINIMO
+    type: Yes/No
+    editable: false
+    show: true
+    formula: "[STOCK_ACTUAL] < [STOCK_MINIMO]"
+    description: "Verdadero si el stock actual cayó por debajo del mínimo definido"
+
+data:
+  - COD_MATERIAL: "CH01"
+    MATERIAL: "Chasis"
+    CATEGORIA: "Estructura"
+    UNIDAD: "UNIDAD"
+    STOCK_MINIMO: 20
+
+  - COD_MATERIAL: "MT01"
+    MATERIAL: "Motor"
+    CATEGORIA: "Motor"
+    UNIDAD: "UNIDAD"
+    STOCK_MINIMO: 20
+
+  - COD_MATERIAL: "PIN01"
+    MATERIAL: "Pintura"
+    CATEGORIA: "Pintura"
+    UNIDAD: "LITRO"
+    STOCK_MINIMO: 50
+
+  - COD_MATERIAL: "NEU01"
+    MATERIAL: "Neumático"
+    CATEGORIA: "Rodado"
+    UNIDAD: "UNIDAD"
+    STOCK_MINIMO: 40
+
+  - COD_MATERIAL: "LLA01"
+    MATERIAL: "Llanta/Rin"
+    CATEGORIA: "Rodado"
+    UNIDAD: "UNIDAD"
+    STOCK_MINIMO: 40
+
+  - COD_MATERIAL: "BAT01"
+    MATERIAL: "Batería"
+    CATEGORIA: "Eléctrico"
+    UNIDAD: "UNIDAD"
+    STOCK_MINIMO: 20
+
+  - COD_MATERIAL: "CAB01"
+    MATERIAL: "Cableado"
+    CATEGORIA: "Eléctrico"
+    UNIDAD: "METRO"
+    STOCK_MINIMO: 200
+
+  - COD_MATERIAL: "TOR01"
+    MATERIAL: "Tornillería"
+    CATEGORIA: "Insumos"
+    UNIDAD: "KG"
+    STOCK_MINIMO: 30
+
+  - COD_MATERIAL: "ASI01"
+    MATERIAL: "Asiento"
+    CATEGORIA: "Carrocería"
+    UNIDAD: "UNIDAD"
+    STOCK_MINIMO: 20
+
+  - COD_MATERIAL: "TAN01"
+    MATERIAL: "Tanque combustible"
+    CATEGORIA: "Carrocería"
+    UNIDAD: "UNIDAD"
+    STOCK_MINIMO: 20

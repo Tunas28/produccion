@@ -1,0 +1,116 @@
+# ============================================================
+# SLICES (Filtros de datos) - AppSheets
+# Configurar en: Data → Slices
+# Tabla: DEPOSITO
+# ============================================================
+
+slices:
+
+  # ──────────────────────────────────────────────────────────
+  # SLICE: Movimientos de HOY
+  # ──────────────────────────────────────────────────────────
+  - name: Deposito_Hoy
+    tabla: Deposito
+    filter: "[FECHA] = TODAY()"
+    columnas_incluidas: ALL
+    descripcion: "Solo movimientos del día actual"
+
+  # ──────────────────────────────────────────────────────────
+  # SLICE: Movimientos de ESTA SEMANA
+  # ──────────────────────────────────────────────────────────
+  - name: Deposito_Esta_Semana
+    tabla: Deposito
+    filter: >
+      AND(
+        WEEKNUM([FECHA]) = WEEKNUM(TODAY()),
+        YEAR([FECHA]) = YEAR(TODAY())
+      )
+    columnas_incluidas: ALL
+    descripcion: "Solo movimientos de la semana actual (lunes a domingo)"
+
+  # ──────────────────────────────────────────────────────────
+  # SLICE: Movimientos de ESTE MES  →  el "mes de depósito"
+  # Uso: KPI mensual + gráficos de entradas/salidas/estados del mes
+  # ──────────────────────────────────────────────────────────
+  - name: Deposito_Este_Mes
+    tabla: Deposito
+    filter: >
+      AND(
+        MONTH([FECHA]) = MONTH(TODAY()),
+        YEAR([FECHA]) = YEAR(TODAY())
+      )
+    columnas_incluidas: ALL
+    descripcion: "Solo movimientos del mes actual — base de los reportes mensuales del depósito"
+
+  # ──────────────────────────────────────────────────────────
+  # SLICE: Movimientos de ESTE AÑO
+  # ──────────────────────────────────────────────────────────
+  - name: Deposito_Este_Anio
+    tabla: Deposito
+    filter: "YEAR([FECHA]) = YEAR(TODAY())"
+    columnas_incluidas: ALL
+    descripcion: "Solo movimientos del año actual"
+
+  # ──────────────────────────────────────────────────────────
+  # SLICE: Todos los movimientos (sin filtro)
+  # ──────────────────────────────────────────────────────────
+  - name: Deposito_Todo
+    tabla: Deposito
+    filter: "TRUE"
+    columnas_incluidas: ALL
+    descripcion: "Historial completo sin filtro de fecha"
+
+  # ──────────────────────────────────────────────────────────
+  # SLICES por TIPO_MOVIMIENTO — alimentan KPIs y gráficos
+  # de cada estado dentro del mes actual
+  # ──────────────────────────────────────────────────────────
+  - name: Deposito_Entradas_Mes
+    tabla: Deposito
+    filter: >
+      AND([ES_ESTE_MES] = TRUE, [TIPO_MOVIMIENTO] = "ENTRADA")
+    columnas_incluidas: ALL
+    descripcion: "Entradas (compras/recepciones) del mes actual"
+
+  - name: Deposito_Salidas_Mes
+    tabla: Deposito
+    filter: >
+      AND([ES_ESTE_MES] = TRUE, [TIPO_MOVIMIENTO] = "SALIDA")
+    columnas_incluidas: ALL
+    descripcion: "Salidas del mes actual"
+
+  - name: Deposito_Completos_Mes
+    tabla: Deposito
+    filter: >
+      AND([ES_ESTE_MES] = TRUE, [TIPO_MOVIMIENTO] = "COMPLETO")
+    columnas_incluidas: ALL
+    descripcion: "Lotes/unidades marcados como completos en el mes actual"
+
+  - name: Deposito_Incompletos_Mes
+    tabla: Deposito
+    filter: >
+      AND([ES_ESTE_MES] = TRUE, [TIPO_MOVIMIENTO] = "INCOMPLETO")
+    columnas_incluidas: ALL
+    descripcion: "Lotes/unidades registrados como incompletos en el mes actual"
+
+  - name: Deposito_Intervenidos_Mes
+    tabla: Deposito
+    filter: >
+      AND([ES_ESTE_MES] = TRUE, [TIPO_MOVIMIENTO] = "INTERVENIDO")
+    columnas_incluidas: ALL
+    descripcion: "Lotes/unidades a los que se les quitaron piezas, en el mes actual"
+
+  - name: Deposito_Reclamados_Mes
+    tabla: Deposito
+    filter: >
+      AND([ES_ESTE_MES] = TRUE, [TIPO_MOVIMIENTO] = "RECLAMADO")
+    columnas_incluidas: ALL
+    descripcion: "Movimientos reclamados/devueltos en el mes actual"
+
+  # ──────────────────────────────────────────────────────────
+  # SLICE: Materiales bajo el stock mínimo (tabla MATERIALES_REF)
+  # ──────────────────────────────────────────────────────────
+  - name: Materiales_Bajo_Minimo
+    tabla: MATERIALES_REF
+    filter: "[BAJO_MINIMO] = TRUE"
+    columnas_incluidas: ALL
+    descripcion: "Materiales cuyo STOCK_ACTUAL cayó por debajo del STOCK_MINIMO"

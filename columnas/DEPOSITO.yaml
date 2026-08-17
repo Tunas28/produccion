@@ -1,0 +1,222 @@
+# ============================================================
+# TABLA: DEPOSITO
+# AppSheets - Definición completa de columnas
+# Kardex de movimientos de materia prima del depósito
+# ============================================================
+
+columns:
+
+  # ──────────────────────────────────────────────────────────
+  # COLUMNAS DE REGISTRO (ingreso manual o automático)
+  # ──────────────────────────────────────────────────────────
+
+  - name: FECHA
+    type: Date
+    key: false
+    label: false
+    editable: true
+    required: true
+    show: true
+    initial_value: "TODAY()"
+    search: false
+
+  - name: ID
+    type: Number
+    key: false
+    label: false
+    editable: false
+    required: false
+    show: true
+    formula: "MAXROW(\"Deposito\", \"ID\") + 1"
+
+  - name: COD_MATERIAL
+    type: Ref
+    ref_table: MATERIALES_REF
+    key: false
+    label: true
+    editable: true
+    required: true
+    show: true
+    search: true
+    valid_if: "IN([COD_MATERIAL], MATERIALES_REF[COD_MATERIAL])"
+    valid_if_error: "Material no encontrado en MATERIALES_REF. Dar de alta el material antes de registrar el movimiento."
+
+  - name: TIPO_MOVIMIENTO
+    type: Enum
+    key: false
+    label: false
+    editable: true
+    required: true
+    show: true
+    enum_values:
+      - ENTRADA
+      - SALIDA
+      - COMPLETO
+      - INCOMPLETO
+      - INTERVENIDO
+      - RECLAMADO
+
+  - name: CANTIDAD
+    type: Number
+    key: false
+    label: false
+    editable: true
+    required: true
+    show: true
+    valid_if: "[CANTIDAD] > 0"
+    valid_if_error: "La cantidad debe ser mayor a cero."
+
+  - name: LOTE
+    type: Text
+    key: false
+    label: false
+    editable: true
+    required: false
+    show: true
+    search: true
+    description: "Número de lote/remito para trazar un mismo ingreso a través de COMPLETO / INCOMPLETO / INTERVENIDO / RECLAMADO"
+
+  - name: PROVEEDOR_DESTINO
+    type: Text
+    key: false
+    label: false
+    editable: true
+    required: false
+    show: true
+    description: "Proveedor (en ENTRADA) o destino/área (en SALIDA)"
+
+  - name: RESPONSABLE
+    type: Text
+    key: false
+    label: false
+    editable: true
+    required: false
+    show: true
+
+  - name: OBS
+    type: LongText
+    key: false
+    label: false
+    editable: true
+    required: false
+    show: true
+
+  # ──────────────────────────────────────────────────────────
+  # COLUMNAS AUTO-CALCULADAS desde MATERIALES_REF
+  # ──────────────────────────────────────────────────────────
+
+  - name: MATERIAL
+    type: Text
+    key: false
+    label: false
+    editable: false
+    required: false
+    show: true
+    formula: "LOOKUP([COD_MATERIAL], \"MATERIALES_REF\", \"COD_MATERIAL\", \"MATERIAL\")"
+
+  - name: UNIDAD
+    type: Text
+    key: false
+    label: false
+    editable: false
+    required: false
+    show: true
+    formula: "LOOKUP([COD_MATERIAL], \"MATERIALES_REF\", \"COD_MATERIAL\", \"UNIDAD\")"
+
+  # ──────────────────────────────────────────────────────────
+  # COLUMNAS VIRTUALES para stock, KPIs y gráficos
+  # Estas columnas NO se guardan en la hoja, son solo cálculo
+  # ──────────────────────────────────────────────────────────
+
+  - name: EFECTO_STOCK
+    type: Number
+    key: false
+    label: false
+    editable: false
+    show: false
+    formula: >
+      IFS(
+        [TIPO_MOVIMIENTO] = "ENTRADA", [CANTIDAD],
+        [TIPO_MOVIMIENTO] = "COMPLETO", [CANTIDAD],
+        [TIPO_MOVIMIENTO] = "SALIDA", -[CANTIDAD],
+        [TIPO_MOVIMIENTO] = "INCOMPLETO", -[CANTIDAD],
+        [TIPO_MOVIMIENTO] = "INTERVENIDO", -[CANTIDAD],
+        [TIPO_MOVIMIENTO] = "RECLAMADO", -[CANTIDAD],
+        TRUE, 0
+      )
+    description: >
+      Cantidad con signo que suma/resta al stock del material.
+      Convención por defecto: ENTRADA y COMPLETO suman stock;
+      SALIDA, INCOMPLETO, INTERVENIDO y RECLAMADO restan stock.
+      Ajustar esta fórmula si el proceso real difiere.
+
+  - name: SEMANA
+    type: Number
+    key: false
+    label: false
+    editable: false
+    show: false
+    formula: "WEEKNUM([FECHA])"
+    description: "Número de semana del año - usado para KPIs semanales"
+
+  - name: MES
+    type: Number
+    key: false
+    label: false
+    editable: false
+    show: false
+    formula: "MONTH([FECHA])"
+    description: "Número de mes - usado para KPIs mensuales"
+
+  - name: AÑO
+    type: Number
+    key: false
+    label: false
+    editable: false
+    show: false
+    formula: "YEAR([FECHA])"
+    description: "Año - evita confusión entre semanas/meses de distintos años"
+
+  - name: MES_LABEL
+    type: Text
+    key: false
+    label: false
+    editable: false
+    show: false
+    formula: "TEXT([FECHA], \"MMM YYYY\")"
+    description: "Ej: Mar 2026 - para agrupar gráficos mensuales (el 'mes de depósito')"
+
+  - name: ES_HOY
+    type: Yes/No
+    key: false
+    label: false
+    editable: false
+    show: false
+    formula: "[FECHA] = TODAY()"
+    description: "Verdadero si el movimiento es de hoy"
+
+  - name: ES_ESTA_SEMANA
+    type: Yes/No
+    key: false
+    label: false
+    editable: false
+    show: false
+    formula: >
+      AND(
+        WEEKNUM([FECHA]) = WEEKNUM(TODAY()),
+        YEAR([FECHA]) = YEAR(TODAY())
+      )
+    description: "Verdadero si el movimiento es de esta semana"
+
+  - name: ES_ESTE_MES
+    type: Yes/No
+    key: false
+    label: false
+    editable: false
+    show: false
+    formula: >
+      AND(
+        MONTH([FECHA]) = MONTH(TODAY()),
+        YEAR([FECHA]) = YEAR(TODAY())
+      )
+    description: "Verdadero si el movimiento es de este mes — es la base del 'mes de depósito'"

@@ -1,0 +1,86 @@
+# ============================================================
+# FÓRMULAS CALCULADAS - AppSheets
+# Tabla: DEPOSITO
+# Estas columnas se calculan AUTOMÁTICAMENTE al elegir COD_MATERIAL
+# y TIPO_MOVIMIENTO. El usuario NO las edita.
+# ============================================================
+
+formulas:
+
+  # ----------------------------------------------------------
+  # MATERIAL - Nombre del material (lookup a MATERIALES_REF)
+  # ----------------------------------------------------------
+  MATERIAL:
+    tipo: App formula
+    resultado_tipo: Text
+    editable: false
+    formula: |
+      LOOKUP([COD_MATERIAL], "MATERIALES_REF", "COD_MATERIAL", "MATERIAL")
+
+  # ----------------------------------------------------------
+  # UNIDAD - Unidad de medida del material (lookup a MATERIALES_REF)
+  # ----------------------------------------------------------
+  UNIDAD:
+    tipo: App formula
+    resultado_tipo: Text
+    editable: false
+    formula: |
+      LOOKUP([COD_MATERIAL], "MATERIALES_REF", "COD_MATERIAL", "UNIDAD")
+
+  # ----------------------------------------------------------
+  # EFECTO_STOCK - Cantidad con signo para el kardex
+  # ----------------------------------------------------------
+  EFECTO_STOCK:
+    tipo: App formula
+    resultado_tipo: Number
+    editable: false
+    formula: |
+      IFS(
+        [TIPO_MOVIMIENTO] = "ENTRADA", [CANTIDAD],
+        [TIPO_MOVIMIENTO] = "COMPLETO", [CANTIDAD],
+        [TIPO_MOVIMIENTO] = "SALIDA", -[CANTIDAD],
+        [TIPO_MOVIMIENTO] = "INCOMPLETO", -[CANTIDAD],
+        [TIPO_MOVIMIENTO] = "INTERVENIDO", -[CANTIDAD],
+        [TIPO_MOVIMIENTO] = "RECLAMADO", -[CANTIDAD],
+        TRUE, 0
+      )
+
+  # ----------------------------------------------------------
+  # ID - Número correlativo automático
+  # ----------------------------------------------------------
+  ID:
+    tipo: App formula
+    resultado_tipo: Number
+    editable: false
+    formula: |
+      MAXROW("Deposito", "ID") + 1
+
+  # ----------------------------------------------------------
+  # FECHA - Fecha del movimiento (hoy por defecto)
+  # ----------------------------------------------------------
+  FECHA:
+    tipo: Initial value
+    resultado_tipo: Date
+    editable: true
+    formula: |
+      TODAY()
+
+# ┌─────────────────────────────────────────────────────────┐
+# │  FÓRMULAS EN MATERIALES_REF (rollup desde DEPOSITO)      │
+# └─────────────────────────────────────────────────────────┘
+
+formulas_materiales_ref:
+
+  STOCK_ACTUAL:
+    tipo: App formula
+    resultado_tipo: Number
+    editable: false
+    formula: |
+      SUM(SELECT(Deposito[EFECTO_STOCK], [COD_MATERIAL] = [_THISROW].[COD_MATERIAL]))
+
+  BAJO_MINIMO:
+    tipo: App formula
+    resultado_tipo: Yes/No
+    editable: false
+    formula: |
+      [STOCK_ACTUAL] < [STOCK_MINIMO]

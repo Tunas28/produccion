@@ -1,0 +1,154 @@
+# ============================================================
+# KPIs y GRÁFICOS - AppSheets
+# Tabla: DEPOSITO (+ rollups en MATERIALES_REF)
+# Configurar en: UX → Views → Dashboard
+# ============================================================
+
+# ┌─────────────────────────────────────────────────────────┐
+# │  KPIs  (agregar como "Deck" o "Card" en el Dashboard)   │
+# └─────────────────────────────────────────────────────────┘
+
+kpis:
+
+  - id: kpi_entradas_mes
+    nombre: "Entradas del Mes"
+    icono: "📥"
+    formula: >
+      SUM(SELECT(Deposito[CANTIDAD], AND([ES_ESTE_MES] = TRUE, [TIPO_MOVIMIENTO] = "ENTRADA")))
+    descripcion: "Cantidad total ingresada al depósito en el mes actual"
+
+  - id: kpi_salidas_mes
+    nombre: "Salidas del Mes"
+    icono: "📤"
+    formula: >
+      SUM(SELECT(Deposito[CANTIDAD], AND([ES_ESTE_MES] = TRUE, [TIPO_MOVIMIENTO] = "SALIDA")))
+    descripcion: "Cantidad total que salió del depósito en el mes actual"
+
+  - id: kpi_incompletos_mes
+    nombre: "Incompletos del Mes"
+    icono: "⚠"
+    formula: "COUNTIFS(Deposito[TIPO_MOVIMIENTO], \"INCOMPLETO\", Deposito[ES_ESTE_MES], TRUE)"
+    descripcion: "Movimientos registrados como incompletos en el mes actual"
+
+  - id: kpi_intervenidos_mes
+    nombre: "Intervenidos del Mes"
+    icono: "🔧"
+    formula: "COUNTIFS(Deposito[TIPO_MOVIMIENTO], \"INTERVENIDO\", Deposito[ES_ESTE_MES], TRUE)"
+    descripcion: "Movimientos a los que se les quitaron piezas, en el mes actual"
+
+  - id: kpi_reclamados_mes
+    nombre: "Reclamados del Mes"
+    icono: "↩"
+    formula: "COUNTIFS(Deposito[TIPO_MOVIMIENTO], \"RECLAMADO\", Deposito[ES_ESTE_MES], TRUE)"
+    descripcion: "Movimientos reclamados/devueltos en el mes actual"
+
+  - id: kpi_materiales_bajo_minimo
+    nombre: "Materiales Bajo Mínimo"
+    icono: "🔴"
+    formula: "COUNTIF(MATERIALES_REF[BAJO_MINIMO], TRUE)"
+    descripcion: "Cantidad de materiales cuyo stock actual está por debajo del mínimo"
+
+  - id: kpi_movimientos_hoy
+    nombre: "Movimientos Hoy"
+    icono: "📅"
+    formula: "COUNTIF(Deposito[ES_HOY], TRUE)"
+    descripcion: "Total de movimientos registrados hoy (de cualquier tipo)"
+
+# ┌─────────────────────────────────────────────────────────┐
+# │  GRÁFICOS  (agregar como Chart views en el Dashboard)   │
+# └─────────────────────────────────────────────────────────┘
+
+graficos:
+
+  # --------------------------------------------------------
+  # GRÁFICO 1: Stock actual por material (barras)
+  # --------------------------------------------------------
+  - id: grafico_stock_actual
+    nombre: "Stock Actual por Material"
+    tipo: Bar Chart
+    tabla: MATERIALES_REF
+    eje_x: MATERIAL
+    eje_y: STOCK_ACTUAL
+    orientacion: horizontal
+    descripcion: >
+      Muestra el stock actual (kardex) de cada material.
+      Ideal para ver de un vistazo qué falta reponer.
+
+  # --------------------------------------------------------
+  # GRÁFICO 2: Entradas vs Salidas por día (mes actual)
+  # --------------------------------------------------------
+  - id: grafico_entradas_salidas_dia
+    nombre: "Entradas vs Salidas por Día"
+    tipo: Line Chart
+    slice: Deposito_Este_Mes
+    eje_x: FECHA
+    eje_y: CANTIDAD
+    series: TIPO_MOVIMIENTO
+    descripcion: >
+      Tendencia diaria de movimientos del mes, separado por tipo
+      (entrada, salida, incompleto, intervenido, completo, reclamado).
+
+  # --------------------------------------------------------
+  # GRÁFICO 3: Movimientos por tipo - mes actual (torta)
+  # --------------------------------------------------------
+  - id: grafico_tipos_mes
+    nombre: "Por Tipo de Movimiento (mes)"
+    tipo: Pie Chart
+    slice: Deposito_Este_Mes
+    group_by: TIPO_MOVIMIENTO
+    descripcion: >
+      Distribución porcentual de los movimientos del mes:
+      entrada, salida, completo, incompleto, intervenido, reclamado.
+
+  # --------------------------------------------------------
+  # GRÁFICO 4: Movimientos por material - mes actual (barras)
+  # --------------------------------------------------------
+  - id: grafico_material_tipo
+    nombre: "Material × Tipo (mes)"
+    tipo: Bar Chart
+    slice: Deposito_Este_Mes
+    eje_x: MATERIAL
+    series: TIPO_MOVIMIENTO
+    group_by: MATERIAL
+    stack: true
+    descripcion: >
+      Barras apiladas: cuántos movimientos de cada tipo tuvo
+      cada material en el mes.
+
+  # --------------------------------------------------------
+  # GRÁFICO 5: Histórico mensual de entradas/salidas
+  # --------------------------------------------------------
+  - id: grafico_historico_mensual
+    nombre: "Histórico Mensual (Entradas/Salidas)"
+    tipo: Bar Chart
+    slice: Deposito_Todo
+    eje_x: MES_LABEL
+    eje_y: CANTIDAD
+    series: TIPO_MOVIMIENTO
+    descripcion: >
+      Entradas y salidas totales por mes. Vista histórica de largo plazo,
+      responde directamente "¿qué pasó cada mes de depósito?".
+
+# ┌─────────────────────────────────────────────────────────┐
+# │  FÓRMULAS DE APOYO PARA KPIs                             │
+# └─────────────────────────────────────────────────────────┘
+
+formulas_kpi:
+
+  entradas_mes:
+    formula: >
+      SUM(SELECT(Deposito[CANTIDAD], AND([ES_ESTE_MES] = TRUE, [TIPO_MOVIMIENTO] = "ENTRADA")))
+    uso: "Tarjeta KPI en dashboard"
+
+  salidas_mes:
+    formula: >
+      SUM(SELECT(Deposito[CANTIDAD], AND([ES_ESTE_MES] = TRUE, [TIPO_MOVIMIENTO] = "SALIDA")))
+    uso: "Tarjeta KPI en dashboard"
+
+  stock_de_un_material:
+    formula: "LOOKUP(\"CH01\", \"MATERIALES_REF\", \"COD_MATERIAL\", \"STOCK_ACTUAL\")"
+    uso: "Reemplazar \"CH01\" por el COD_MATERIAL deseado"
+
+  movimientos_por_lote:
+    formula: "COUNT(SELECT(Deposito[ID], [LOTE] = \"LOTE-0001\"))"
+    uso: "Trazar cuántos movimientos tuvo un lote (recepción, incompleto, completo, etc.)"
