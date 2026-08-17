@@ -1,26 +1,30 @@
 # ============================================================
 # TABLA DE REFERENCIA: UBICACIONES
-# Catálogo de racks/estantes del depósito. La ubicación es
+# Catálogo de posiciones físicas del depósito. La ubicación es
 # ROTATIVA (confirmado): un material NO tiene un rack fijo, se va
 # guardando donde haya espacio libre en el momento. Por eso esta
-# tabla NO fija "qué material va en cada rack" — solo lista los
-# racks que existen físicamente, y cada movimiento de ENTRADA en
-# Deposito registra en cuál se guardó ese ingreso puntual.
+# tabla NO fija "qué material va en cada posición" — solo lista las
+# posiciones que existen físicamente, y cada movimiento de ENTRADA
+# en Deposito registra en cuál se guardó ese ingreso puntual.
+#
+# CONFIRMADO: cada MÓDULO de rack tiene el piso + 3 niveles encima
+# (4 posiciones físicas por módulo: PISO, NIVEL_1, NIVEL_2, NIVEL_3).
 # ============================================================
 
 # Columnas de la hoja UBICACIONES en Google Sheets:
-#   CODIGO | ZONA              | ESTADO | OBS
-#   -------|-------------------|--------|----
-#   A-1    | Motos CKD         | LIBRE  |
-#   A-2    | Motos CKD         | LIBRE  |
-#   B-1    | Bicicletas        | LIBRE  |
+#   CODIGO   | MODULO | NIVEL   | ZONA      | ESTADO | OBS
+#   ---------|--------|---------|-----------|--------|----
+#   A-1-PISO | A-1    | PISO    | Motos CKD | LIBRE  |
+#   A-1-N1   | A-1    | NIVEL_1 | Motos CKD | LIBRE  |
+#   A-1-N2   | A-1    | NIVEL_2 | Motos CKD | LIBRE  |
+#   A-1-N3   | A-1    | NIVEL_3 | Motos CKD | LIBRE  |
 #
-# ⚠ Todavía no hay racks/zonas cargados ("no tengo nada aún" —
-#   confirmado). Esta tabla arranca VACÍA de datos; completar con
-#   los códigos reales de rack antes de usar el sistema. ZONA es
-#   opcional y solo sirve para agrupar (ej. "cerca de línea motos"
-#   vs. "cerca de línea bicicletas") — no implica que el rack sea
-#   fijo para esa zona, es orientativo nada más.
+# ⚠ Todavía no hay módulos/racks reales cargados ("no tengo nada
+#   aún" — confirmado). Esta tabla arranca VACÍA de datos; usar
+#   sheets/setup_deposito.gs → agregarModuloRack(codigo, zona) para
+#   generar las 4 posiciones de un módulo nuevo de una sola vez.
+#   ZONA es orientativa (ej. "cerca de línea motos") — no fija el
+#   uso del módulo, es solo para agrupar/filtrar.
 
 columns:
 
@@ -28,10 +32,33 @@ columns:
     type: Text
     key: true
     label: true
+    editable: false
+    show: true
+    formula: "CONCATENATE([MODULO], \"-\", [NIVEL])"
+    description: "Identificador único de la posición física (módulo + nivel)"
+
+  - name: MODULO
+    type: Text
+    key: false
+    label: false
     editable: true
     required: true
     show: true
-    description: "Identificador físico del rack/estante (ej. 'A-1')"
+    description: "Identificador del rack físico (ej. 'A-1'). Cada módulo tiene 4 posiciones: PISO + 3 niveles."
+
+  - name: NIVEL
+    type: Enum
+    key: false
+    label: false
+    editable: true
+    required: true
+    show: true
+    enum_values:
+      - PISO
+      - NIVEL_1
+      - NIVEL_2
+      - NIVEL_3
+    description: "Confirmado: cada módulo tiene el piso más 3 niveles encima"
 
   - name: ZONA
     type: Text
@@ -40,7 +67,7 @@ columns:
     editable: true
     required: false
     show: true
-    description: "Agrupación orientativa (ej. 'Motos CKD', 'Bicicletas', 'General') — no fija el uso del rack"
+    description: "Agrupación orientativa (ej. 'Motos CKD', 'Bicicletas', 'General') — no fija el uso del módulo"
 
   - name: ESTADO
     type: Enum
@@ -85,7 +112,7 @@ columns:
       )
     description: >
       Referencia de apoyo, NO un cálculo confiable de ocupación real
-      (no sabemos cuándo se retiró algo de un rack, solo cuándo entró
-      algo). El campo que manda es ESTADO, actualizado a mano.
+      (no sabemos cuándo se retiró algo de una posición, solo cuándo
+      entró algo). El campo que manda es ESTADO, actualizado a mano.
 
 data: []

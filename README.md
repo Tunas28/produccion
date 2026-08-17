@@ -644,7 +644,7 @@ que describe un flujo típico de ensamble CKD (Complete Knock Down):
 | `CHEQUEO_RECEPCION` | Detalle esperado/recibido/faltante por material | **Automático** (Bot 1, ver abajo) |
 | `ORDENES_PRODUCCION` | Encabezado de OP: modelo + cantidad a producir | Manual (form) |
 | `PICKING_OP` | Detalle de picking: requerido/preparado por material | **Automático** (Bot 3) |
-| `UBICACIONES` | Catálogo de racks (ubicación rotativa, confirmado) | Manual, arranca vacía |
+| `UBICACIONES` | Catálogo de posiciones: módulo × nivel (piso + 3 niveles, confirmado) | Manual, arranca vacía |
 | `MATERIALES_REF` | (ya existía) ahora con `ULTIMA_UBICACION` (virtual) en vez de un campo fijo | — |
 | `DUDAS_PENDIENTES` | Las 15 preguntas de diseño (2 ya respondidas) | Pre-cargada, se completa `RESPUESTA` |
 
@@ -656,18 +656,24 @@ Ver columnas completas en `columnas/BOM_REF.yaml`,
 ### Ubicación rotativa (confirmado)
 
 El cliente confirmó que los racks **no son fijos por material** — se
-ocupa el que esté libre según se va liberando espacio. Por eso el
-diseño NO tiene un campo `MATERIALES_REF.UBICACION` fijo. En cambio:
+ocupa el que esté libre según se va liberando espacio. También
+confirmó que **cada módulo de rack tiene el piso más 3 niveles
+encima** (4 posiciones físicas por módulo). Por eso el diseño NO
+tiene un campo `MATERIALES_REF.UBICACION` fijo. En cambio:
 
-- **`Deposito.UBICACION`** (Ref a `UBICACIONES`) — se completa en cada
-  movimiento `ENTRADA`: dónde se guardó FÍSICAMENTE ese ingreso puntual.
+- **`UBICACIONES`** — catálogo de posiciones físicas: `MODULO` (ej.
+  "A-1") × `NIVEL` (`PISO`, `NIVEL_1`, `NIVEL_2`, `NIVEL_3`), con
+  `CODIGO` autogenerado (`MODULO-NIVEL`) y `ESTADO` (LIBRE/OCUPADO,
+  a mano). Arranca vacía — todavía no hay módulos reales cargados.
+  `sheets/setup_deposito.gs → agregarModuloRack('A-1', 'Motos CKD')`
+  carga las 4 posiciones de un módulo de una sola vez.
+- **`Deposito.UBICACION`** (Ref a `UBICACIONES`, o sea a una posición
+  puntual módulo+nivel) — se completa en cada movimiento `ENTRADA`:
+  dónde se guardó FÍSICAMENTE ese ingreso puntual.
 - **`MATERIALES_REF.ULTIMA_UBICACION`** — columna virtual que muestra
   la ubicación de la ENTRADA más reciente de ese material (orientativa,
   no garantiza dónde está TODO el stock si quedó repartido en más de
-  un rack).
-- **`UBICACIONES`** — catálogo de racks/estantes que existen
-  físicamente (`CODIGO`, `ZONA`, `ESTADO` LIBRE/OCUPADO). Arranca
-  vacía — todavía no hay códigos de rack reales cargados.
+  una posición).
 
 ### Cómo funciona el flujo
 

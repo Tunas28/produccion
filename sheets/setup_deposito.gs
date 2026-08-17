@@ -33,15 +33,20 @@ function crearEstructuraDeposito() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// HOJA: UBICACIONES (catálogo de racks — vacía, ubicación rotativa)
+// HOJA: UBICACIONES (catálogo de posiciones — vacía, ubicación rotativa)
+// CONFIRMADO: cada módulo de rack tiene el piso + 3 niveles encima,
+// es decir 4 posiciones físicas por módulo (PISO, NIVEL_1, NIVEL_2,
+// NIVEL_3). Usar agregarModuloRack() para cargar un módulo completo.
 // ─────────────────────────────────────────────────────────────
+var NIVELES_POR_MODULO = ['PISO', 'NIVEL_1', 'NIVEL_2', 'NIVEL_3'];
+
 function crearHojaUbicaciones(ss) {
   var hoja = ss.getSheetByName('UBICACIONES');
   if (hoja) ss.deleteSheet(hoja);
 
   hoja = ss.insertSheet('UBICACIONES', 1);
 
-  var encabezados = ['CODIGO', 'ZONA', 'ESTADO', 'OBS'];
+  var encabezados = ['CODIGO', 'MODULO', 'NIVEL', 'ZONA', 'ESTADO', 'OBS'];
   var fila1 = hoja.getRange(1, 1, 1, encabezados.length);
   fila1.setValues([encabezados]);
   fila1.setBackground('#455A64')
@@ -52,10 +57,33 @@ function crearHojaUbicaciones(ss) {
     hoja.autoResizeColumn(i);
   }
 
-  // ⚠ Arranca VACÍA — no hay racks/códigos reales todavía
-  // (confirmado: "no tengo nada aún"). Cargar los códigos de rack
-  // reales antes de usar Deposito.UBICACION.
-  Logger.log('Hoja UBICACIONES creada (vacía, esperando códigos de rack reales).');
+  // ⚠ Arranca VACÍA — no hay módulos/racks reales todavía
+  // (confirmado: "no tengo nada aún"). Cargar los módulos reales con
+  // agregarModuloRack('A-1', 'Motos CKD') antes de usar Deposito.UBICACION.
+  Logger.log('Hoja UBICACIONES creada (vacía, esperando módulos de rack reales).');
+}
+
+/**
+ * Agrega las 4 posiciones (PISO, NIVEL_1, NIVEL_2, NIVEL_3) de UN
+ * módulo de rack de una sola vez, en vez de cargarlas a mano.
+ * Uso: en el editor de Apps Script, ejecutar manualmente algo como
+ *   agregarModuloRack('A-1', 'Motos CKD')
+ * (no tiene menú propio porque necesita parámetros).
+ */
+function agregarModuloRack(codigoModulo, zona) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = ss.getSheetByName('UBICACIONES');
+  if (!hoja) {
+    throw new Error('No existe la hoja UBICACIONES. Correr primero crearEstructuraDeposito().');
+  }
+
+  var filas = NIVELES_POR_MODULO.map(function (nivel) {
+    return [codigoModulo + '-' + nivel, codigoModulo, nivel, zona || '', 'LIBRE', ''];
+  });
+
+  var ultimaFila = hoja.getLastRow();
+  hoja.getRange(ultimaFila + 1, 1, filas.length, 6).setValues(filas);
+  Logger.log('Módulo ' + codigoModulo + ' agregado con sus 4 posiciones (PISO + 3 niveles).');
 }
 
 // ─────────────────────────────────────────────────────────────
