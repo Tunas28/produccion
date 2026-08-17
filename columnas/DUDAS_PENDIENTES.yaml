@@ -162,7 +162,14 @@ data:
       impresa, con tablet, o hay algún tipo de cinta/transporte
       automático?
     POR_QUE_IMPORTA: "Confirma si la vista 'Picking a Línea' en un celular/tablet alcanza, o si hace falta otra interfaz (ej. pantalla fija en el depósito)."
-    ESTADO: "ABIERTA"
+    ESTADO: "RESPONDIDA"
+    RESPUESTA: >
+      4 operarios, sin ninguna herramienta hoy (ni lista impresa ni
+      tablet — a memoria/criterio propio). Confirma que la vista
+      "Picking a Línea" en celular/tablet es una mejora real, no un
+      reemplazo de algo que ya funcionaba. Pendiente operativo (no
+      de diseño): dar de alta 4 cuentas de operario en AppSheets con
+      acceso a esa vista.
 
   - ID: 10
     CATEGORIA: "Trazabilidad y calidad"
