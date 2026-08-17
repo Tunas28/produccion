@@ -82,7 +82,11 @@ data:
       El código de contenedor (LOTE), ¿lo asigna el proveedor en el
       remito/ASN, o lo generan ustedes al recibirlo?
     POR_QUE_IMPORTA: "Define si LOTE sigue siendo texto libre escaneable o necesita un generador correlativo propio."
-    ESTADO: "ABIERTA"
+    ESTADO: "RESPONDIDA"
+    RESPUESTA: >
+      Lo asigna el proveedor en el remito. Confirma el diseño actual:
+      LOTE queda como texto libre escaneable (RECEPCIONES_CKD.LOTE,
+      scan=true), sin necesidad de un generador correlativo propio.
 
   - ID: 4
     CATEGORIA: "Recepción CKD"
