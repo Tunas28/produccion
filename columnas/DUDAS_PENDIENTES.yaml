@@ -179,7 +179,11 @@ data:
       más fino que lo que hoy registra Producción (que solo guarda la
       moto terminada, no cada pieza individual).
     POR_QUE_IMPORTA: "¿Vale la pena ese nivel de detalle, o alcanza con saber qué operario cargó cada movimiento de depósito (columna RESPONSABLE, que ya existe)? Ese nivel de detalle implicaría una tabla nueva mucho más granular."
-    ESTADO: "ABIERTA"
+    ESTADO: "RESPONDIDA"
+    RESPUESTA: >
+      Alcanza con RESPONSABLE por movimiento. Confirma el diseño
+      actual: no hace falta una tabla de trazabilidad pieza por pieza
+      con operario+herramienta. Descartado por ahora.
 
   - ID: 11
     CATEGORIA: "OEE / paradas de línea"
