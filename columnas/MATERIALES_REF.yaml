@@ -5,21 +5,28 @@
 # ============================================================
 
 # Columnas de la hoja MATERIALES_REF en Google Sheets:
-#   COD_MATERIAL | MATERIAL           | CATEGORIA   | UNIDAD | STOCK_MINIMO
-#   -------------|--------------------|-------------|--------|--------------
-#   CH01         | Chasis             | Estructura  | UNIDAD | 20
-#   MT01         | Motor              | Motor       | UNIDAD | 20
-#   PIN01        | Pintura            | Pintura     | LITRO  | 50
-#   NEU01        | Neumático          | Rodado      | UNIDAD | 40
-#   LLA01        | Llanta/Rin         | Rodado      | UNIDAD | 40
-#   BAT01        | Batería            | Eléctrico   | UNIDAD | 20
-#   CAB01        | Cableado           | Eléctrico   | METRO  | 200
-#   TOR01        | Tornillería        | Insumos     | KG     | 30
-#   ASI01        | Asiento            | Carrocería  | UNIDAD | 20
-#   TAN01        | Tanque combustible | Carrocería  | UNIDAD | 20
+#   COD_MATERIAL | MATERIAL           | CATEGORIA        | UNIDAD | STOCK_MINIMO
+#   -------------|--------------------|------------------|--------|--------------
+#   CH01         | Chasis (partes)    | Partes de Chasis | UNIDAD | 20   ← confirmado
+#   MT01         | Motor              | Motores          | UNIDAD | 20   ← confirmado
+#   PLA01        | Plásticos (kit)    | Plásticos        | UNIDAD | 30   ← confirmado
+#   VEN01        | Ventilador CKD     | Ventiladores CKD | UNIDAD | 20   ← confirmado
+#   TOR01        | Tornillería        | Insumos          | KG     | 30   ← sin confirmar
+#   NEU01        | Neumático          | Rodado           | UNIDAD | 40   ← sin confirmar
+#   LLA01        | Llanta/Rin         | Rodado           | UNIDAD | 40   ← sin confirmar
+#   BAT01        | Batería            | Eléctrico        | UNIDAD | 20   ← sin confirmar
+#   CAB01        | Cableado           | Eléctrico        | METRO  | 200  ← sin confirmar
+#   PIN01        | Pintura            | Pintura          | LITRO  | 50   ← sin confirmar
+#   ASI01        | Asiento            | Carrocería       | UNIDAD | 20   ← sin confirmar
+#   TAN01        | Tanque combustible | Carrocería       | UNIDAD | 20   ← sin confirmar
 #
-# ⚠ Estos son materiales de EJEMPLO. Reemplazar/ampliar la lista
-#   con los materiales reales del depósito antes de producción.
+# ⚠ "Confirmado" = categoría mencionada por el cliente (motos CKD, 3
+#   modelos: plásticos, motores, partes de chasis, ventiladores CKD).
+#   El resto son ejemplos previos que se mantienen solo para no romper
+#   BOM_REF — hay que confirmarlos o reemplazarlos, y todavía falta
+#   armar el catálogo de bicicletas (~24 modelos, ver DUDAS_PENDIENTES).
+#   Ya NO tiene columna UBICACION fija: la ubicación es rotativa (ver
+#   tabla UBICACIONES y Deposito.UBICACION).
 
 columns:
 
@@ -46,19 +53,36 @@ columns:
     type: Number
     description: "Umbral para la alerta de stock bajo (ver STOCK_ACTUAL / BAJO_MINIMO)"
 
-  - name: UBICACION
-    type: Text
-    description: >
-      Ubicación física en el depósito (ej. "Estante A-3", "Rack Motores 2").
-      Campo simple de texto libre — no es un WMS real (sin mapa de
-      estantería, sin optimización automática de ubicación por
-      frecuencia de uso). Ver pregunta abierta en DUDAS_PENDIENTES
-      sobre si la ubicación es fija o rotativa.
-
   # ──────────────────────────────────────────────────────────
   # COLUMNAS VIRTUALES — calculan el stock a partir del historial
   # de movimientos en la tabla DEPOSITO (kardex)
   # ──────────────────────────────────────────────────────────
+
+  - name: ULTIMA_UBICACION
+    type: Text
+    editable: false
+    show: true
+    formula: >
+      LOOKUP(
+        MAX(SELECT(Deposito[ID],
+          AND(
+            [COD_MATERIAL] = [_THISROW].[COD_MATERIAL],
+            [TIPO_MOVIMIENTO] = "ENTRADA",
+            [UBICACION] <> ""
+          )
+        )),
+        "Deposito", "ID", "UBICACION"
+      )
+    description: >
+      RESPUESTA CONFIRMADA (DUDAS_PENDIENTES #8): la ubicación en rack
+      es ROTATIVA, no fija — se ocupa según se va liberando espacio.
+      Por eso ya no hay un campo UBICACION fijo acá: cada movimiento
+      de ENTRADA en Deposito registra dónde se colocó ESE ingreso
+      (columna Deposito.UBICACION, validada contra la tabla
+      UBICACIONES). Esta columna solo muestra la ubicación de la
+      ENTRADA más reciente de este material — es orientativa, no una
+      garantía de dónde está todo el stock actual (puede haber
+      quedado repartido en más de un rack a la vez).
 
   - name: STOCK_ACTUAL
     type: Number
@@ -143,73 +167,87 @@ columns:
     formula: "[SALDO_INICIAL_MES] + [ENTRADAS_MES] - [SALIDAS_MES] + [AJUSTES_MES]"
     description: "Saldo Inicial + Entradas − Salidas + Ajustes = stock al día de hoy dentro del mes actual (coincide con STOCK_ACTUAL mientras el mes esté en curso)"
 
+# ⚠ Categorías CONFIRMADAS por el cliente para motos CKD (3 modelos):
+#   plásticos, motores, partes de chasis, ventiladores CKD.
+#   Todavía no hay SKUs/códigos reales — estos son solo un ejemplo de
+#   la ESTRUCTURA (una fila por pieza dentro de cada categoría) para
+#   poder cargar el BOM real después. Bicicletas (~24 modelos) queda
+#   pendiente de definir (ver DUDAS_PENDIENTES #13).
+
 data:
   - COD_MATERIAL: "CH01"
-    MATERIAL: "Chasis"
-    CATEGORIA: "Estructura"
+    MATERIAL: "Chasis (partes) — ejemplo genérico"
+    CATEGORIA: "Partes de Chasis"
     UNIDAD: "UNIDAD"
     STOCK_MINIMO: 20
-    UBICACION: "Rack A-1"
 
   - COD_MATERIAL: "MT01"
-    MATERIAL: "Motor"
-    CATEGORIA: "Motor"
+    MATERIAL: "Motor — ejemplo genérico"
+    CATEGORIA: "Motores"
     UNIDAD: "UNIDAD"
     STOCK_MINIMO: 20
-    UBICACION: "Rack A-2 (cerca de línea)"
 
-  - COD_MATERIAL: "PIN01"
-    MATERIAL: "Pintura"
-    CATEGORIA: "Pintura"
-    UNIDAD: "LITRO"
-    STOCK_MINIMO: 50
-    UBICACION: "Estante B-1"
-
-  - COD_MATERIAL: "NEU01"
-    MATERIAL: "Neumático"
-    CATEGORIA: "Rodado"
+  - COD_MATERIAL: "PLA01"
+    MATERIAL: "Plásticos (kit) — ejemplo genérico"
+    CATEGORIA: "Plásticos"
     UNIDAD: "UNIDAD"
-    STOCK_MINIMO: 40
-    UBICACION: "Estante C-1"
+    STOCK_MINIMO: 30
 
-  - COD_MATERIAL: "LLA01"
-    MATERIAL: "Llanta/Rin"
-    CATEGORIA: "Rodado"
-    UNIDAD: "UNIDAD"
-    STOCK_MINIMO: 40
-    UBICACION: "Estante C-2"
-
-  - COD_MATERIAL: "BAT01"
-    MATERIAL: "Batería"
-    CATEGORIA: "Eléctrico"
+  - COD_MATERIAL: "VEN01"
+    MATERIAL: "Ventilador CKD — ejemplo genérico"
+    CATEGORIA: "Ventiladores CKD"
     UNIDAD: "UNIDAD"
     STOCK_MINIMO: 20
-    UBICACION: "Estante D-1"
-
-  - COD_MATERIAL: "CAB01"
-    MATERIAL: "Cableado"
-    CATEGORIA: "Eléctrico"
-    UNIDAD: "METRO"
-    STOCK_MINIMO: 200
-    UBICACION: "Estante D-2"
 
   - COD_MATERIAL: "TOR01"
     MATERIAL: "Tornillería"
     CATEGORIA: "Insumos"
     UNIDAD: "KG"
     STOCK_MINIMO: 30
-    UBICACION: "Estante E-1"
+    # No confirmado explícitamente, se deja como insumo genérico típico de CKD
+
+  # Los siguientes NO fueron mencionados por el cliente todavía —
+  # se mantienen como ejemplo de otras piezas típicas de un kit CKD
+  # de moto (rodado, eléctrico) para no perder la estructura de
+  # BOM_REF que ya los usa. Confirmar o borrar junto con el resto.
+  - COD_MATERIAL: "NEU01"
+    MATERIAL: "Neumático"
+    CATEGORIA: "Rodado"
+    UNIDAD: "UNIDAD"
+    STOCK_MINIMO: 40
+
+  - COD_MATERIAL: "LLA01"
+    MATERIAL: "Llanta/Rin"
+    CATEGORIA: "Rodado"
+    UNIDAD: "UNIDAD"
+    STOCK_MINIMO: 40
+
+  - COD_MATERIAL: "BAT01"
+    MATERIAL: "Batería"
+    CATEGORIA: "Eléctrico"
+    UNIDAD: "UNIDAD"
+    STOCK_MINIMO: 20
+
+  - COD_MATERIAL: "CAB01"
+    MATERIAL: "Cableado"
+    CATEGORIA: "Eléctrico"
+    UNIDAD: "METRO"
+    STOCK_MINIMO: 200
+
+  - COD_MATERIAL: "PIN01"
+    MATERIAL: "Pintura"
+    CATEGORIA: "Pintura"
+    UNIDAD: "LITRO"
+    STOCK_MINIMO: 50
 
   - COD_MATERIAL: "ASI01"
     MATERIAL: "Asiento"
     CATEGORIA: "Carrocería"
     UNIDAD: "UNIDAD"
     STOCK_MINIMO: 20
-    UBICACION: "Estante F-1"
 
   - COD_MATERIAL: "TAN01"
     MATERIAL: "Tanque combustible"
     CATEGORIA: "Carrocería"
     UNIDAD: "UNIDAD"
     STOCK_MINIMO: 20
-    UBICACION: "Estante F-2"

@@ -71,6 +71,26 @@ formulas:
 
 formulas_materiales_ref:
 
+  ULTIMA_UBICACION:
+    tipo: App formula
+    resultado_tipo: Text
+    editable: false
+    formula: |
+      LOOKUP(
+        MAX(SELECT(Deposito[ID],
+          AND(
+            [COD_MATERIAL] = [_THISROW].[COD_MATERIAL],
+            [TIPO_MOVIMIENTO] = "ENTRADA",
+            [UBICACION] <> ""
+          )
+        )),
+        "Deposito", "ID", "UBICACION"
+      )
+    nota: >
+      Reemplaza al viejo campo fijo MATERIALES_REF.UBICACION — la
+      ubicación es rotativa (confirmado), así que esto solo muestra
+      dónde entró la ÚLTIMA vez, no un lugar fijo garantizado.
+
   STOCK_ACTUAL:
     tipo: App formula
     resultado_tipo: Number

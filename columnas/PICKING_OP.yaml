@@ -65,8 +65,11 @@ columns:
     label: false
     editable: false
     show: true
-    formula: "LOOKUP([COD_MATERIAL], \"MATERIALES_REF\", \"COD_MATERIAL\", \"UBICACION\")"
-    description: "De dónde sacar el material — guía al operario en el picking físico"
+    formula: "LOOKUP([COD_MATERIAL], \"MATERIALES_REF\", \"COD_MATERIAL\", \"ULTIMA_UBICACION\")"
+    description: >
+      De dónde sacar el material, según la ENTRADA más reciente
+      registrada en Deposito (ubicación rotativa — es orientativo,
+      confirmar físicamente antes de sacarlo, puede haber cambiado).
 
   - name: COMPLETO
     type: Yes/No

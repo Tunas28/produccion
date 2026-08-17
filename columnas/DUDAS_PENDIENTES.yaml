@@ -23,6 +23,7 @@ columns:
       - "Trazabilidad y calidad"
       - "OEE / paradas de línea"
       - "Escala / performance"
+      - "Catálogo de Productos"
 
   - name: PREGUNTA
     type: LongText
@@ -35,6 +36,7 @@ columns:
     type: Enum
     enum_values:
       - ABIERTA
+      - PARCIAL
       - RESPONDIDA
     initial_value: "ABIERTA"
 
@@ -55,11 +57,17 @@ data:
   - ID: 2
     CATEGORIA: "BOM / Piezas críticas"
     PREGUNTA: >
-      ¿Cuántas piezas distintas lleva realmente un modelo? El BOM de
-      ejemplo cargado hoy solo tiene 3-4 líneas por modelo (chasis,
-      motor, algún rodado) para poder probar el sistema.
-    POR_QUE_IMPORTA: "BOM_REF hay que completarlo con la lista real (probablemente 15-30+ ítems por modelo) antes de usarlo en producción."
-    ESTADO: "ABIERTA"
+      ¿Cuántas piezas distintas lleva realmente un modelo, dentro de
+      cada categoría confirmada (plásticos, motores, partes de
+      chasis, ventiladores CKD)? Ej: "plásticos" seguramente son
+      varias piezas (carenados, guardabarros, tapas...), no una sola.
+    POR_QUE_IMPORTA: "BOM_REF hoy tiene solo 1 SKU de ejemplo por categoría. Falta el detalle real (probablemente 15-30+ ítems por modelo) antes de usarlo en producción."
+    ESTADO: "PARCIAL"
+    RESPUESTA: >
+      PARCIAL: se confirmaron las 4 categorías (plásticos, motores,
+      partes de chasis, ventiladores CKD) para motos CKD, 3 modelos.
+      Falta el detalle: SKUs, cantidades y cuáles piezas son críticas
+      dentro de cada categoría.
 
   - ID: 3
     CATEGORIA: "Recepción CKD"
@@ -107,7 +115,13 @@ data:
       La ubicación en estantería (UBICACION en MATERIALES_REF),
       ¿es fija por material o rota según espacio disponible?
     POR_QUE_IMPORTA: "Si rota, un campo de texto fijo no alcanza — habría que trackear la ubicación como parte de cada movimiento en Deposito, no como un dato fijo del material."
-    ESTADO: "ABIERTA"
+    ESTADO: "RESPONDIDA"
+    RESPUESTA: >
+      Rotativa: "en rack que no son fijos, es decir según se liberan se
+      va ocupando". Implementado: se sacó MATERIALES_REF.UBICACION
+      (fijo) y se agregó Deposito.UBICACION (por movimiento de ENTRADA,
+      validado contra la nueva tabla UBICACIONES) + MATERIALES_REF.
+      ULTIMA_UBICACION (orientativa, la más reciente conocida).
 
   - ID: 9
     CATEGORIA: "Depósito / Ubicación"
@@ -144,4 +158,42 @@ data:
       filas al año, y las fórmulas SUM(SELECT(...)) se ponen lentas en
       Google Sheets a partir de cierto volumen.
     POR_QUE_IMPORTA: "¿Está bien archivar (mover a una hoja histórica) los movimientos de más de N meses, o necesitan todo el historial siempre 'vivo' para consultas? Define si hace falta un proceso de archivado periódico."
+    ESTADO: "ABIERTA"
+
+  - ID: 13
+    CATEGORIA: "Catálogo de Productos"
+    PREGUNTA: >
+      Confirmado: son 3 modelos de moto CKD (no 6). ¿Cuáles son los
+      3 modelos reales — nombres, cilindrada, y el prefijo de chasis
+      o código que los identifica? MODELOS_REF y BOM_REF hoy siguen
+      teniendo los 6 modelos de EJEMPLO originales del repo (Cub 110,
+      Urban 110, VX125, Super Sport 200, Rally 250, Faiter SE 150),
+      que nunca fueron confirmados como reales.
+    POR_QUE_IMPORTA: "Hay que reemplazar MODELOS_REF y BOM_REF por los 3 modelos reales — todo lo que referencia COD_MOD (Producción, Depósito, CKD) depende de esto."
+    ESTADO: "ABIERTA"
+
+  - ID: 14
+    CATEGORIA: "Catálogo de Productos"
+    PREGUNTA: >
+      Bicicletas (~24 modelos): ¿comparten el mismo depósito/materiales
+      físicos que las motos (mismo galpón, mismos racks rotativos), o
+      es una zona/inventario separado? ¿Las bicicletas también llegan
+      como CKD (desarmadas, con BOM y recepción/QC), o se arman/compran
+      distinto?
+    POR_QUE_IMPORTA: >
+      Define la arquitectura: (a) un único catálogo de productos
+      (MODELOS_REF unificado con un campo TIPO_PRODUCTO=MOTO/BICICLETA)
+      compartiendo Deposito/MATERIALES_REF/BOM_REF, o (b) un sistema
+      paralelo tipo BICICLETAS_REF + BOM_BICICLETAS + su propio
+      Deposito. Es la decisión de mayor impacto pendiente.
+    ESTADO: "ABIERTA"
+
+  - ID: 15
+    CATEGORIA: "Catálogo de Productos"
+    PREGUNTA: >
+      Para las bicicletas, ¿querés que arme ya la estructura de tablas
+      con un par de modelos de ejemplo (como se hizo con motos), o
+      preferís esperar a tener la lista real de los ~24 modelos antes
+      de tocar código?
+    POR_QUE_IMPORTA: "Evita fabricar 24 modelos y sus BOM inventados de la nada — mejor confirmar alcance antes de generar datos de ejemplo que después haya que descartar."
     ESTADO: "ABIERTA"

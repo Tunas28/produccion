@@ -34,7 +34,7 @@ function crearEstructuraCKD() {
     '✅ Estructura CKD/BOM/Kitting creada (borrador).\n\n' +
     '• BOM_REF, RECEPCIONES_CKD, CHEQUEO_RECEPCION\n' +
     '• ORDENES_PRODUCCION, PICKING_OP\n' +
-    '• DUDAS_PENDIENTES — 12 preguntas de diseño abiertas\n\n' +
+    '• DUDAS_PENDIENTES — 15 preguntas de diseño (2 respondidas)\n\n' +
     '⚠ Empezar por DUDAS_PENDIENTES antes de conectar esto a AppSheets:\n' +
     'varias respuestas pueden cambiar las tablas.\n\n' +
     'Los Bots (CHEQUEO_RECEPCION y PICKING_OP se auto-completan) se\n' +
@@ -52,19 +52,25 @@ function crearHojaBOM(ss) {
 
   var encabezados = ['ID_BOM', 'COD_MOD', 'COD_MATERIAL', 'CANTIDAD_POR_UNIDAD', 'CRITICO'];
   var datos = [
-    ['1A-CH01', '1A', 'CH01', 1,   true],
-    ['1A-MT01', '1A', 'MT01', 1,   true],
-    ['1A-NEU01','1A', 'NEU01',2,   false],
-    ['1A-BAT01','1A', 'BAT01',1,   true],
-    ['BA-CH01', 'BA', 'CH01', 1,   true],
-    ['BA-MT01', 'BA', 'MT01', 1,   true],
-    ['BA-LLA01','BA', 'LLA01',2,   false],
-    ['2B-CH01', '2B', 'CH01', 1,   true],
-    ['2B-MT01', '2B', 'MT01', 1,   true],
-    ['2B-PIN01','2B', 'PIN01',0.5, false]
+    ['1A-CH01', '1A', 'CH01',  1,   true],
+    ['1A-MT01', '1A', 'MT01',  1,   true],
+    ['1A-PLA01','1A', 'PLA01', 1,   false],
+    ['1A-VEN01','1A', 'VEN01', 1,   true],
+    ['1A-NEU01','1A', 'NEU01', 2,   false],
+    ['1A-BAT01','1A', 'BAT01', 1,   true],
+    ['BA-CH01', 'BA', 'CH01',  1,   true],
+    ['BA-MT01', 'BA', 'MT01',  1,   true],
+    ['BA-PLA01','BA', 'PLA01', 1,   false],
+    ['BA-LLA01','BA', 'LLA01', 2,   false],
+    ['2B-CH01', '2B', 'CH01',  1,   true],
+    ['2B-MT01', '2B', 'MT01',  1,   true],
+    ['2B-VEN01','2B', 'VEN01', 1,   true],
+    ['2B-PIN01','2B', 'PIN01', 0.5, false]
   ];
-  // ⚠ BOM de EJEMPLO — completar con todas las piezas reales por
-  //   modelo (ver DUDAS_PENDIENTES #2).
+  // ⚠ BOM de EJEMPLO — COD_MOD "1A"/"BA"/"2B" son los 3 modelos
+  //   PLACEHOLDER de MODELOS_REF, NO los 3 modelos reales de moto CKD
+  //   confirmados (ver DUDAS_PENDIENTES #13). Completar con las piezas
+  //   y modelos reales antes de usar esto en producción.
 
   escribirEncabezado(hoja, encabezados, '#455A64');
   hoja.getRange(2, 1, datos.length, encabezados.length).setValues(datos);
@@ -141,7 +147,9 @@ function crearHojaPickingOP(ss) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// HOJA: DUDAS_PENDIENTES — las 12 preguntas de diseño abiertas
+// HOJA: DUDAS_PENDIENTES — 15 preguntas de diseño (13-15 agregadas
+// tras la primera ronda de respuestas del cliente sobre ubicación
+// rotativa, categorías de materiales CKD y bicicletas)
 // ─────────────────────────────────────────────────────────────
 function crearHojaDudasPendientes(ss) {
   var hoja = ss.getSheetByName('DUDAS_PENDIENTES');
@@ -155,8 +163,9 @@ function crearHojaDudasPendientes(ss) {
       'Define cómo se completa la columna CRITICO en BOM_REF.', 'ABIERTA', ''],
 
     [2, 'BOM / Piezas críticas',
-      '¿Cuántas piezas distintas lleva realmente un modelo? El BOM de ejemplo cargado hoy solo tiene 3-4 líneas por modelo.',
-      'BOM_REF hay que completarlo con la lista real (probablemente 15-30+ ítems por modelo) antes de usarlo en producción.', 'ABIERTA', ''],
+      '¿Cuántas piezas distintas lleva realmente un modelo dentro de cada categoría confirmada (plásticos, motores, partes de chasis, ventiladores CKD)?',
+      'BOM_REF hoy tiene solo 1 SKU de ejemplo por categoría. Falta el detalle real (probablemente 15-30+ ítems por modelo).', 'PARCIAL',
+      'PARCIAL: se confirmaron las 4 categorías para motos CKD (3 modelos). Falta el detalle de SKUs, cantidades y cuáles son críticas.'],
 
     [3, 'Recepción CKD',
       'El código de contenedor (LOTE), ¿lo asigna el proveedor en el remito/ASN, o lo generan ustedes al recibirlo?',
@@ -179,8 +188,9 @@ function crearHojaDudasPendientes(ss) {
       'Si hay más de una línea, PICKING_OP necesitaría un campo LINEA_DESTINO.', 'ABIERTA', ''],
 
     [8, 'Depósito / Ubicación',
-      'La ubicación en estantería (UBICACION en MATERIALES_REF), ¿es fija por material o rota según espacio disponible?',
-      'Si rota, un campo de texto fijo no alcanza — habría que trackearla como parte de cada movimiento.', 'ABIERTA', ''],
+      'La ubicación en estantería, ¿es fija por material o rota según espacio disponible?',
+      'Si rota, un campo de texto fijo no alcanza — habría que trackearla como parte de cada movimiento.', 'RESPONDIDA',
+      'Rotativa: "en rack que no son fijos, según se liberan se va ocupando". Implementado: tabla UBICACIONES + Deposito.UBICACION por movimiento + MATERIALES_REF.ULTIMA_UBICACION (orientativa).'],
 
     [9, 'Depósito / Ubicación',
       '¿Quién arma el kit físicamente hoy? ¿Un operario con lista impresa, con tablet, o hay transporte automático?',
@@ -196,7 +206,19 @@ function crearHojaDudasPendientes(ss) {
 
     [12, 'Escala / performance',
       'Con 20-100 motos/día, Deposito puede acumular miles de filas al año y las fórmulas SUM(SELECT(...)) se ponen lentas.',
-      '¿Está bien archivar movimientos de más de N meses a una hoja histórica, o necesitan todo siempre "vivo"?', 'ABIERTA', '']
+      '¿Está bien archivar movimientos de más de N meses a una hoja histórica, o necesitan todo siempre "vivo"?', 'ABIERTA', ''],
+
+    [13, 'Catálogo de Productos',
+      'Confirmado: son 3 modelos de moto CKD (no 6). ¿Cuáles son los 3 modelos reales — nombres, cilindrada, código/prefijo de chasis? MODELOS_REF y BOM_REF todavía tienen los 6 modelos de EJEMPLO originales del repo, nunca confirmados como reales.',
+      'Hay que reemplazar MODELOS_REF y BOM_REF por los 3 modelos reales — todo lo que referencia COD_MOD depende de esto.', 'ABIERTA', ''],
+
+    [14, 'Catálogo de Productos',
+      'Bicicletas (~24 modelos): ¿comparten el mismo depósito/materiales que las motos, o es una zona/inventario separado? ¿También llegan como CKD con BOM y recepción/QC, o se arman/compran distinto?',
+      'Define la arquitectura: catálogo unificado (MODELOS_REF con TIPO_PRODUCTO=MOTO/BICICLETA) compartiendo Deposito/BOM_REF, o un sistema paralelo tipo BICICLETAS_REF + BOM_BICICLETAS + depósito propio. Decisión de mayor impacto pendiente.', 'ABIERTA', ''],
+
+    [15, 'Catálogo de Productos',
+      'Para bicicletas, ¿armo ya la estructura de tablas con un par de modelos de ejemplo (como se hizo con motos), o esperamos a tener la lista real de los ~24 modelos?',
+      'Evita fabricar 24 modelos y BOM inventados de la nada — mejor confirmar alcance antes de generar datos de ejemplo que después haya que descartar.', 'ABIERTA', '']
   ];
 
   escribirEncabezado(hoja, encabezados, '#B71C1C');

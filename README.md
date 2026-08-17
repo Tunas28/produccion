@@ -389,7 +389,8 @@ columnas/
   CHEQUEO_RECEPCION.yaml    — [DISEÑO] Validación de kit (esperado vs. recibido)
   ORDENES_PRODUCCION.yaml   — [DISEÑO] Órdenes de producción (OP)
   PICKING_OP.yaml           — [DISEÑO] Picking/kitting hacia la línea
-  DUDAS_PENDIENTES.yaml     — [DISEÑO] Preguntas abiertas del Sistema 3
+  UBICACIONES.yaml          — [DISEÑO] Catálogo de racks (ubicación rotativa, confirmado)
+  DUDAS_PENDIENTES.yaml     — [DISEÑO] Preguntas de diseño del Sistema 3 (15, 2 respondidas)
 
 expresiones/
   formulas_calculadas.yaml  — Fórmulas IFS para auto-completar desde el chasis
@@ -609,10 +610,16 @@ almacenes:
 
 ## Sistema 3: Recepción CKD, BOM y Kitting (DISEÑO — borrador)
 
-> ⚠ **Esto todavía es un diseño, no algo listo para usar.** Hay 12
+> ⚠ **Esto todavía es un diseño, no algo listo para usar.** Hay 13
 > preguntas abiertas (ver hoja `DUDAS_PENDIENTES`) que pueden cambiar
 > las tablas. Completar esas respuestas antes de conectar esto a
 > AppSheets en serio.
+>
+> **Ya se confirmó:** hay 2 líneas de producto — **motos CKD (3
+> modelos)** y **bicicletas (~24 modelos)** — y **la ubicación en
+> depósito es rotativa** (no fija: se ocupa el rack que esté libre en
+> el momento). El diseño ya está actualizado con esto último; falta
+> definir cómo se integran las bicicletas (ver pregunta #14).
 
 ### ¿Qué agrega sobre el Sistema 2 (Depósito)?
 
@@ -637,13 +644,30 @@ que describe un flujo típico de ensamble CKD (Complete Knock Down):
 | `CHEQUEO_RECEPCION` | Detalle esperado/recibido/faltante por material | **Automático** (Bot 1, ver abajo) |
 | `ORDENES_PRODUCCION` | Encabezado de OP: modelo + cantidad a producir | Manual (form) |
 | `PICKING_OP` | Detalle de picking: requerido/preparado por material | **Automático** (Bot 3) |
-| `MATERIALES_REF` | (ya existía) ahora con columna `UBICACION` | — |
-| `DUDAS_PENDIENTES` | Las 12 preguntas de diseño abiertas | Pre-cargada, se completa `RESPUESTA` |
+| `UBICACIONES` | Catálogo de racks (ubicación rotativa, confirmado) | Manual, arranca vacía |
+| `MATERIALES_REF` | (ya existía) ahora con `ULTIMA_UBICACION` (virtual) en vez de un campo fijo | — |
+| `DUDAS_PENDIENTES` | Las 15 preguntas de diseño (2 ya respondidas) | Pre-cargada, se completa `RESPUESTA` |
 
 Ver columnas completas en `columnas/BOM_REF.yaml`,
 `columnas/RECEPCIONES_CKD.yaml`, `columnas/CHEQUEO_RECEPCION.yaml`,
-`columnas/ORDENES_PRODUCCION.yaml`, `columnas/PICKING_OP.yaml` y
-`columnas/DUDAS_PENDIENTES.yaml`.
+`columnas/ORDENES_PRODUCCION.yaml`, `columnas/PICKING_OP.yaml`,
+`columnas/UBICACIONES.yaml` y `columnas/DUDAS_PENDIENTES.yaml`.
+
+### Ubicación rotativa (confirmado)
+
+El cliente confirmó que los racks **no son fijos por material** — se
+ocupa el que esté libre según se va liberando espacio. Por eso el
+diseño NO tiene un campo `MATERIALES_REF.UBICACION` fijo. En cambio:
+
+- **`Deposito.UBICACION`** (Ref a `UBICACIONES`) — se completa en cada
+  movimiento `ENTRADA`: dónde se guardó FÍSICAMENTE ese ingreso puntual.
+- **`MATERIALES_REF.ULTIMA_UBICACION`** — columna virtual que muestra
+  la ubicación de la ENTRADA más reciente de ese material (orientativa,
+  no garantiza dónde está TODO el stock si quedó repartido en más de
+  un rack).
+- **`UBICACIONES`** — catálogo de racks/estantes que existen
+  físicamente (`CODIGO`, `ZONA`, `ESTADO` LIBRE/OCUPADO). Arranca
+  vacía — todavía no hay códigos de rack reales cargados.
 
 ### Cómo funciona el flujo
 
@@ -681,31 +705,36 @@ CKD", "Control de Calidad CKD", "Crear Orden de Producción",
 
 ### Setup
 
-`sheets/setup_ckd.gs` → función `crearEstructuraCKD()` crea las 6
-hojas nuevas (con `BOM_REF` de ejemplo y `DUDAS_PENDIENTES`
-pre-cargada). **Empezar por la hoja `DUDAS_PENDIENTES`** antes de
-conectar nada a AppSheets — varias respuestas cambian el diseño de
-las tablas (ver tabla de preguntas abajo).
+`sheets/setup_ckd.gs` → función `crearEstructuraCKD()` crea las 7
+hojas nuevas (con `BOM_REF`/`UBICACIONES` de ejemplo y
+`DUDAS_PENDIENTES` pre-cargada). **Empezar por la hoja
+`DUDAS_PENDIENTES`** antes de conectar nada a AppSheets — varias
+respuestas cambian el diseño de las tablas (ver tabla de preguntas
+abajo).
 
-### Las 12 preguntas abiertas
+### Las 15 preguntas (2 ya respondidas)
 
-| # | Categoría | Pregunta (resumen) |
-|---|---|---|
-| 1 | BOM | ¿Qué se considera "pieza crítica" y quién lo define? |
-| 2 | BOM | ¿Cuántas piezas reales lleva cada modelo? (el BOM de ejemplo solo tiene 3-4) |
-| 3 | Recepción CKD | ¿El LOTE lo asigna el proveedor o se genera acá? |
-| 4 | Recepción CKD | ¿Un contenedor trae un solo modelo o varios mezclados? |
-| 5 | Recepción CKD | ¿Qué pasa en la práctica si hay faltantes críticos? |
-| 6 | Orden de Producción | ¿Cómo se genera la OP hoy (manual, otro sistema)? |
-| 7 | Orden de Producción | ¿Cuántas líneas de ensamble simultáneas hay? |
-| 8 | Depósito / Ubicación | ¿La ubicación en estantería es fija o rotativa? |
-| 9 | Depósito / Ubicación | ¿Quién arma el kit físicamente y con qué dispositivo? |
-| 10 | Trazabilidad | ¿Hace falta trazar operario+herramienta por pieza, o alcanza con RESPONSABLE por movimiento? |
-| 11 | OEE | ¿Miden hoy tiempos de parada de línea de alguna forma? |
-| 12 | Escala | ¿Se puede archivar el histórico de Deposito, o tiene que quedar todo siempre "vivo"? |
+| # | Categoría | Estado | Pregunta (resumen) |
+|---|---|---|---|
+| 1 | BOM | Abierta | ¿Qué se considera "pieza crítica" y quién lo define? |
+| 2 | BOM | **Parcial** | Categorías confirmadas (plásticos, motores, chasis, ventiladores); falta el detalle de SKUs/cantidades |
+| 3 | Recepción CKD | Abierta | ¿El LOTE lo asigna el proveedor o se genera acá? |
+| 4 | Recepción CKD | Abierta | ¿Un contenedor trae un solo modelo o varios mezclados? |
+| 5 | Recepción CKD | Abierta | ¿Qué pasa en la práctica si hay faltantes críticos? |
+| 6 | Orden de Producción | Abierta | ¿Cómo se genera la OP hoy (manual, otro sistema)? |
+| 7 | Orden de Producción | Abierta | ¿Cuántas líneas de ensamble simultáneas hay? |
+| 8 | Depósito / Ubicación | **Respondida** | Rotativa — implementado (ver sección arriba) |
+| 9 | Depósito / Ubicación | Abierta | ¿Quién arma el kit físicamente y con qué dispositivo? |
+| 10 | Trazabilidad | Abierta | ¿Hace falta trazar operario+herramienta por pieza, o alcanza con RESPONSABLE por movimiento? |
+| 11 | OEE | Abierta | ¿Miden hoy tiempos de parada de línea de alguna forma? |
+| 12 | Escala | Abierta | ¿Se puede archivar el histórico de Deposito, o tiene que quedar todo siempre "vivo"? |
+| 13 | Catálogo de Productos | Abierta | ¿Cuáles son los 3 modelos reales de moto CKD? (MODELOS_REF sigue con 6 de ejemplo) |
+| 14 | Catálogo de Productos | Abierta | Bicicletas: ¿catálogo/depósito compartido con motos, o separado? |
+| 15 | Catálogo de Productos | Abierta | Bicicletas: ¿armar ya una estructura de ejemplo, o esperar la lista real de los ~24 modelos? |
 
-Detalle completo (por qué importa cada una) en `columnas/DUDAS_PENDIENTES.yaml`
-y en la hoja `DUDAS_PENDIENTES` una vez corrido el setup.
+Detalle completo (por qué importa cada una, y las respuestas ya
+registradas) en `columnas/DUDAS_PENDIENTES.yaml` y en la hoja
+`DUDAS_PENDIENTES` una vez corrido el setup.
 
 ---
 

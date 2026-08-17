@@ -85,6 +85,22 @@ columns:
     show: true
     description: "Proveedor (en ENTRADA) o destino/área (en SALIDA)"
 
+  - name: UBICACION
+    type: Ref
+    ref_table: UBICACIONES
+    key: false
+    label: false
+    editable: true
+    required: false
+    show: true
+    valid_if: >
+      OR([UBICACION] = "", IN([UBICACION], UBICACIONES[CODIGO]))
+    description: >
+      Rack/estante donde se guardó ESTE ingreso puntual (confirmado:
+      la ubicación es rotativa, no fija por material — se completa
+      solo en movimientos ENTRADA). Ver MATERIALES_REF.ULTIMA_UBICACION
+      para la última ubicación conocida de un material.
+
   - name: RESPONSABLE
     type: Text
     key: false

@@ -1,0 +1,91 @@
+# ============================================================
+# TABLA DE REFERENCIA: UBICACIONES
+# Catálogo de racks/estantes del depósito. La ubicación es
+# ROTATIVA (confirmado): un material NO tiene un rack fijo, se va
+# guardando donde haya espacio libre en el momento. Por eso esta
+# tabla NO fija "qué material va en cada rack" — solo lista los
+# racks que existen físicamente, y cada movimiento de ENTRADA en
+# Deposito registra en cuál se guardó ese ingreso puntual.
+# ============================================================
+
+# Columnas de la hoja UBICACIONES en Google Sheets:
+#   CODIGO | ZONA              | ESTADO | OBS
+#   -------|-------------------|--------|----
+#   A-1    | Motos CKD         | LIBRE  |
+#   A-2    | Motos CKD         | LIBRE  |
+#   B-1    | Bicicletas        | LIBRE  |
+#
+# ⚠ Todavía no hay racks/zonas cargados ("no tengo nada aún" —
+#   confirmado). Esta tabla arranca VACÍA de datos; completar con
+#   los códigos reales de rack antes de usar el sistema. ZONA es
+#   opcional y solo sirve para agrupar (ej. "cerca de línea motos"
+#   vs. "cerca de línea bicicletas") — no implica que el rack sea
+#   fijo para esa zona, es orientativo nada más.
+
+columns:
+
+  - name: CODIGO
+    type: Text
+    key: true
+    label: true
+    editable: true
+    required: true
+    show: true
+    description: "Identificador físico del rack/estante (ej. 'A-1')"
+
+  - name: ZONA
+    type: Text
+    key: false
+    label: false
+    editable: true
+    required: false
+    show: true
+    description: "Agrupación orientativa (ej. 'Motos CKD', 'Bicicletas', 'General') — no fija el uso del rack"
+
+  - name: ESTADO
+    type: Enum
+    key: false
+    label: false
+    editable: true
+    required: true
+    show: true
+    enum_values:
+      - LIBRE
+      - OCUPADO
+    initial_value: "LIBRE"
+    description: >
+      Lo actualiza el operario a mano al guardar o retirar algo
+      (no hay sensores/WMS real). Ver ESTADO_CALCULADO para una
+      referencia automática basada en el último movimiento.
+
+  - name: OBS
+    type: LongText
+    key: false
+    label: false
+    editable: true
+    required: false
+    show: true
+
+  # ──────────────────────────────────────────────────────────
+  # COLUMNA VIRTUAL — referencia automática, no reemplaza ESTADO
+  # ──────────────────────────────────────────────────────────
+
+  - name: ESTADO_CALCULADO
+    type: Text
+    key: false
+    label: false
+    editable: false
+    show: true
+    formula: >
+      IFS(
+        COUNT(SELECT(Deposito[ID],
+          AND([UBICACION] = [_THISROW].[CODIGO], [TIPO_MOVIMIENTO] = "ENTRADA", [FECHA] >= (TODAY() - 90))
+        )) = 0, "SIN_MOVIMIENTOS_RECIENTES",
+        TRUE, "CON_MOVIMIENTOS_RECIENTES (revisar a mano)"
+      )
+    description: >
+      Referencia de apoyo, NO un cálculo confiable de ocupación real
+      (no sabemos cuándo se retiró algo de un rack, solo cuándo entró
+      algo). El campo que manda es ESTADO, actualizado a mano.
+
+data: []

@@ -17,17 +17,45 @@
 function crearEstructuraDeposito() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
 
+  crearHojaUbicaciones(ss);
   crearHojaDeposito(ss);
   crearHojaMaterialesRef(ss);
   cargarDatosPruebaDeposito(ss);
 
   SpreadsheetApp.getUi().alert(
     '✅ Estructura de Depósito creada correctamente.\n\n' +
+    '• Hoja "UBICACIONES" → catálogo de racks (vacía, ubicación es rotativa)\n' +
     '• Hoja "Deposito" → kardex de movimientos, lista para conectar a AppSheets\n' +
     '• Hoja "MATERIALES_REF" → tabla de referencia de materiales y stock\n' +
     '• Se cargaron movimientos de prueba\n\n' +
-    'Siguiente paso: en AppSheets, Data → Add new table, para agregar ambas hojas.'
+    'Siguiente paso: en AppSheets, Data → Add new table, para agregar las 3 hojas.'
   );
+}
+
+// ─────────────────────────────────────────────────────────────
+// HOJA: UBICACIONES (catálogo de racks — vacía, ubicación rotativa)
+// ─────────────────────────────────────────────────────────────
+function crearHojaUbicaciones(ss) {
+  var hoja = ss.getSheetByName('UBICACIONES');
+  if (hoja) ss.deleteSheet(hoja);
+
+  hoja = ss.insertSheet('UBICACIONES', 1);
+
+  var encabezados = ['CODIGO', 'ZONA', 'ESTADO', 'OBS'];
+  var fila1 = hoja.getRange(1, 1, 1, encabezados.length);
+  fila1.setValues([encabezados]);
+  fila1.setBackground('#455A64')
+       .setFontColor('#FFFFFF')
+       .setFontWeight('bold');
+  hoja.setFrozenRows(1);
+  for (var i = 1; i <= encabezados.length; i++) {
+    hoja.autoResizeColumn(i);
+  }
+
+  // ⚠ Arranca VACÍA — no hay racks/códigos reales todavía
+  // (confirmado: "no tengo nada aún"). Cargar los códigos de rack
+  // reales antes de usar Deposito.UBICACION.
+  Logger.log('Hoja UBICACIONES creada (vacía, esperando códigos de rack reales).');
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -42,7 +70,7 @@ function crearHojaDeposito(ss) {
   // Encabezados exactos — no cambiar el orden ni los nombres
   var encabezados = [
     'FECHA', 'ID', 'COD_MATERIAL', 'MATERIAL', 'UNIDAD',
-    'TIPO_MOVIMIENTO', 'CANTIDAD', 'LOTE', 'PROVEEDOR_DESTINO',
+    'TIPO_MOVIMIENTO', 'CANTIDAD', 'LOTE', 'PROVEEDOR_DESTINO', 'UBICACION',
     'RESPONSABLE', 'OBS', 'EFECTO_STOCK',
     'SEMANA', 'MES', 'AÑO', 'MES_LABEL',
     'ES_HOY', 'ES_ESTA_SEMANA', 'ES_ESTE_MES'
@@ -65,8 +93,9 @@ function crearHojaDeposito(ss) {
   hoja.setColumnWidth(7, 90);    // CANTIDAD
   hoja.setColumnWidth(8, 120);   // LOTE
   hoja.setColumnWidth(9, 160);   // PROVEEDOR_DESTINO
-  hoja.setColumnWidth(10, 120);  // RESPONSABLE
-  hoja.setColumnWidth(11, 200);  // OBS
+  hoja.setColumnWidth(10, 100);  // UBICACION (rack donde se guardó ESTE ingreso — rotativo)
+  hoja.setColumnWidth(11, 120);  // RESPONSABLE
+  hoja.setColumnWidth(12, 200);  // OBS
 
   hoja.setFrozenRows(1);
 
@@ -84,18 +113,25 @@ function crearHojaMaterialesRef(ss) {
 
   var encabezados = ['COD_MATERIAL', 'MATERIAL', 'CATEGORIA', 'UNIDAD', 'STOCK_MINIMO'];
   var datos = [
-    ['CH01',  'Chasis',              'Estructura', 'UNIDAD', 20],
-    ['MT01',  'Motor',               'Motor',      'UNIDAD', 20],
-    ['PIN01', 'Pintura',             'Pintura',    'LITRO',  50],
+    // Categorías CONFIRMADAS (motos CKD, 3 modelos): plásticos, motores,
+    // partes de chasis, ventiladores CKD — SKUs todavía genéricos de ejemplo.
+    ['CH01',  'Chasis (partes) — ejemplo', 'Partes de Chasis', 'UNIDAD', 20],
+    ['MT01',  'Motor — ejemplo',           'Motores',          'UNIDAD', 20],
+    ['PLA01', 'Plásticos (kit) — ejemplo', 'Plásticos',        'UNIDAD', 30],
+    ['VEN01', 'Ventilador CKD — ejemplo',  'Ventiladores CKD', 'UNIDAD', 20],
+    ['TOR01', 'Tornillería',               'Insumos',          'KG',     30],
+    // Sin confirmar todavía — se mantienen para no romper BOM_REF
     ['NEU01', 'Neumático',           'Rodado',     'UNIDAD', 40],
     ['LLA01', 'Llanta/Rin',          'Rodado',     'UNIDAD', 40],
     ['BAT01', 'Batería',             'Eléctrico',  'UNIDAD', 20],
     ['CAB01', 'Cableado',            'Eléctrico',  'METRO',  200],
-    ['TOR01', 'Tornillería',         'Insumos',    'KG',     30],
+    ['PIN01', 'Pintura',             'Pintura',    'LITRO',  50],
     ['ASI01', 'Asiento',             'Carrocería', 'UNIDAD', 20],
     ['TAN01', 'Tanque combustible',  'Carrocería', 'UNIDAD', 20]
   ];
   // ⚠ Materiales de EJEMPLO — reemplazar por los reales del depósito.
+  //   Bicicletas (~24 modelos) todavía no tiene catálogo de materiales
+  //   propio (ver DUDAS_PENDIENTES #14/#15).
 
   var fila1 = hoja.getRange(1, 1, 1, encabezados.length);
   fila1.setValues([encabezados]);
@@ -126,25 +162,27 @@ function cargarDatosPruebaDeposito(ss) {
     return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
   }
 
-  // [FECHA, ID, COD_MATERIAL, MATERIAL, UNIDAD, TIPO_MOVIMIENTO, CANTIDAD, LOTE, PROVEEDOR_DESTINO, RESPONSABLE, OBS]
+  // [FECHA, ID, COD_MATERIAL, MATERIAL, UNIDAD, TIPO_MOVIMIENTO, CANTIDAD, LOTE, PROVEEDOR_DESTINO, UBICACION, RESPONSABLE, OBS]
+  // UBICACION queda vacía en los ejemplos porque UBICACIONES todavía no
+  // tiene códigos de rack reales cargados (ver DUDAS_PENDIENTES #8).
   var registros = [
-    [diasAtras(10), 1, 'CH01',  'Chasis',             'UNIDAD', 'ENTRADA',     50, 'LOTE-0001', 'Proveedor Chasis SA',  'Juan Pérez', ''],
-    [diasAtras(10), 2, 'MT01',  'Motor',               'UNIDAD', 'ENTRADA',     50, 'LOTE-0002', 'Proveedor Motores SA', 'Juan Pérez', ''],
-    [diasAtras(9),  3, 'PIN01', 'Pintura',              'LITRO',  'ENTRADA',    120, 'LOTE-0003', 'Pinturas del Sur',    'Ana Gómez',  ''],
-    [diasAtras(8),  4, 'NEU01', 'Neumático',            'UNIDAD', 'ENTRADA',    80, 'LOTE-0004', 'Neumáticos SRL',      'Ana Gómez',  ''],
-    [diasAtras(7),  5, 'CH01',  'Chasis',               'UNIDAD', 'INCOMPLETO', 3,  'LOTE-0001', '',                    'Juan Pérez', 'Faltaron 3 unidades en la recepción'],
-    [diasAtras(6),  6, 'MT01',  'Motor',                'UNIDAD', 'INTERVENIDO', 2, 'LOTE-0002', '',                    'Carlos Ruiz', 'Se retiraron 2 motores para peritaje'],
-    [diasAtras(5),  7, 'CH01',  'Chasis',               'UNIDAD', 'SALIDA',     20, '',           'Línea de producción', 'Carlos Ruiz', ''],
-    [diasAtras(5),  8, 'MT01',  'Motor',                'UNIDAD', 'SALIDA',     20, '',           'Línea de producción', 'Carlos Ruiz', ''],
-    [diasAtras(4),  9, 'PIN01', 'Pintura',              'LITRO',  'SALIDA',     30, '',           'Línea de pintura',    'Ana Gómez',  ''],
-    [diasAtras(3),  10, 'CH01', 'Chasis',               'UNIDAD', 'COMPLETO',   3,  'LOTE-0001', 'Proveedor Chasis SA', 'Juan Pérez', 'Reposición de las 3 unidades faltantes'],
-    [diasAtras(2),  11, 'NEU01', 'Neumático',           'UNIDAD', 'RECLAMADO',  5,  'LOTE-0004', 'Neumáticos SRL',      'Ana Gómez',  'Defecto de fabricación, devuelto al proveedor'],
-    [diasAtras(1),  12, 'BAT01', 'Batería',             'UNIDAD', 'ENTRADA',    30, 'LOTE-0005', 'Baterías Norte',      'Juan Pérez', ''],
-    [diasAtras(0),  13, 'LLA01', 'Llanta/Rin',          'UNIDAD', 'ENTRADA',    40, 'LOTE-0006', 'Rines y Llantas SA',  'Ana Gómez',  ''],
-    [diasAtras(0),  14, 'BAT01', 'Batería',             'UNIDAD', 'SALIDA',     10, '',           'Línea de producción', 'Carlos Ruiz', '']
+    [diasAtras(10), 1, 'CH01',  'Chasis',             'UNIDAD', 'ENTRADA',     50, 'LOTE-0001', 'Proveedor Chasis SA',  '', 'Juan Pérez', ''],
+    [diasAtras(10), 2, 'MT01',  'Motor',               'UNIDAD', 'ENTRADA',     50, 'LOTE-0002', 'Proveedor Motores SA', '', 'Juan Pérez', ''],
+    [diasAtras(9),  3, 'PIN01', 'Pintura',              'LITRO',  'ENTRADA',    120, 'LOTE-0003', 'Pinturas del Sur',    '', 'Ana Gómez',  ''],
+    [diasAtras(8),  4, 'NEU01', 'Neumático',            'UNIDAD', 'ENTRADA',    80, 'LOTE-0004', 'Neumáticos SRL',      '', 'Ana Gómez',  ''],
+    [diasAtras(7),  5, 'CH01',  'Chasis',               'UNIDAD', 'INCOMPLETO', 3,  'LOTE-0001', '',                    '', 'Juan Pérez', 'Faltaron 3 unidades en la recepción'],
+    [diasAtras(6),  6, 'MT01',  'Motor',                'UNIDAD', 'INTERVENIDO', 2, 'LOTE-0002', '',                    '', 'Carlos Ruiz', 'Se retiraron 2 motores para peritaje'],
+    [diasAtras(5),  7, 'CH01',  'Chasis',               'UNIDAD', 'SALIDA',     20, '',           'Línea de producción', '', 'Carlos Ruiz', ''],
+    [diasAtras(5),  8, 'MT01',  'Motor',                'UNIDAD', 'SALIDA',     20, '',           'Línea de producción', '', 'Carlos Ruiz', ''],
+    [diasAtras(4),  9, 'PIN01', 'Pintura',              'LITRO',  'SALIDA',     30, '',           'Línea de pintura',    '', 'Ana Gómez',  ''],
+    [diasAtras(3),  10, 'CH01', 'Chasis',               'UNIDAD', 'COMPLETO',   3,  'LOTE-0001', 'Proveedor Chasis SA', '', 'Juan Pérez', 'Reposición de las 3 unidades faltantes'],
+    [diasAtras(2),  11, 'NEU01', 'Neumático',           'UNIDAD', 'RECLAMADO',  5,  'LOTE-0004', 'Neumáticos SRL',      '', 'Ana Gómez',  'Defecto de fabricación, devuelto al proveedor'],
+    [diasAtras(1),  12, 'BAT01', 'Batería',             'UNIDAD', 'ENTRADA',    30, 'LOTE-0005', 'Baterías Norte',      '', 'Juan Pérez', ''],
+    [diasAtras(0),  13, 'LLA01', 'Llanta/Rin',          'UNIDAD', 'ENTRADA',    40, 'LOTE-0006', 'Rines y Llantas SA',  '', 'Ana Gómez',  ''],
+    [diasAtras(0),  14, 'BAT01', 'Batería',             'UNIDAD', 'SALIDA',     10, '',           'Línea de producción', '', 'Carlos Ruiz', '']
   ];
 
-  hoja.getRange(2, 1, registros.length, 11).setValues(registros);
+  hoja.getRange(2, 1, registros.length, 12).setValues(registros);
 
   // EFECTO_STOCK, SEMANA, MES, AÑO, MES_LABEL, ES_HOY, ES_ESTA_SEMANA, ES_ESTE_MES
   // son columnas virtuales/App formula en AppSheets: no se cargan por script.
@@ -154,7 +192,7 @@ function cargarDatosPruebaDeposito(ss) {
 
   for (var i = 0; i < registros.length; i++) {
     var color = (i % 2 === 0) ? '#F5F5F5' : '#FFFFFF';
-    hoja.getRange(i + 2, 1, 1, 11).setBackground(color);
+    hoja.getRange(i + 2, 1, 1, 12).setBackground(color);
   }
 
   Logger.log('Cargados ' + registros.length + ' movimientos de prueba.');
