@@ -46,6 +46,15 @@ columns:
     type: Number
     description: "Umbral para la alerta de stock bajo (ver STOCK_ACTUAL / BAJO_MINIMO)"
 
+  - name: UBICACION
+    type: Text
+    description: >
+      Ubicación física en el depósito (ej. "Estante A-3", "Rack Motores 2").
+      Campo simple de texto libre — no es un WMS real (sin mapa de
+      estantería, sin optimización automática de ubicación por
+      frecuencia de uso). Ver pregunta abierta en DUDAS_PENDIENTES
+      sobre si la ubicación es fija o rotativa.
+
   # ──────────────────────────────────────────────────────────
   # COLUMNAS VIRTUALES — calculan el stock a partir del historial
   # de movimientos en la tabla DEPOSITO (kardex)
@@ -140,57 +149,67 @@ data:
     CATEGORIA: "Estructura"
     UNIDAD: "UNIDAD"
     STOCK_MINIMO: 20
+    UBICACION: "Rack A-1"
 
   - COD_MATERIAL: "MT01"
     MATERIAL: "Motor"
     CATEGORIA: "Motor"
     UNIDAD: "UNIDAD"
     STOCK_MINIMO: 20
+    UBICACION: "Rack A-2 (cerca de línea)"
 
   - COD_MATERIAL: "PIN01"
     MATERIAL: "Pintura"
     CATEGORIA: "Pintura"
     UNIDAD: "LITRO"
     STOCK_MINIMO: 50
+    UBICACION: "Estante B-1"
 
   - COD_MATERIAL: "NEU01"
     MATERIAL: "Neumático"
     CATEGORIA: "Rodado"
     UNIDAD: "UNIDAD"
     STOCK_MINIMO: 40
+    UBICACION: "Estante C-1"
 
   - COD_MATERIAL: "LLA01"
     MATERIAL: "Llanta/Rin"
     CATEGORIA: "Rodado"
     UNIDAD: "UNIDAD"
     STOCK_MINIMO: 40
+    UBICACION: "Estante C-2"
 
   - COD_MATERIAL: "BAT01"
     MATERIAL: "Batería"
     CATEGORIA: "Eléctrico"
     UNIDAD: "UNIDAD"
     STOCK_MINIMO: 20
+    UBICACION: "Estante D-1"
 
   - COD_MATERIAL: "CAB01"
     MATERIAL: "Cableado"
     CATEGORIA: "Eléctrico"
     UNIDAD: "METRO"
     STOCK_MINIMO: 200
+    UBICACION: "Estante D-2"
 
   - COD_MATERIAL: "TOR01"
     MATERIAL: "Tornillería"
     CATEGORIA: "Insumos"
     UNIDAD: "KG"
     STOCK_MINIMO: 30
+    UBICACION: "Estante E-1"
 
   - COD_MATERIAL: "ASI01"
     MATERIAL: "Asiento"
     CATEGORIA: "Carrocería"
     UNIDAD: "UNIDAD"
     STOCK_MINIMO: 20
+    UBICACION: "Estante F-1"
 
   - COD_MATERIAL: "TAN01"
     MATERIAL: "Tanque combustible"
     CATEGORIA: "Carrocería"
     UNIDAD: "UNIDAD"
     STOCK_MINIMO: 20
+    UBICACION: "Estante F-2"

@@ -1,0 +1,147 @@
+# ============================================================
+# TABLA: DUDAS_PENDIENTES
+# Preguntas de diseño abiertas sobre Recepción CKD / BOM / Kitting.
+# Se completan progresivamente en la columna RESPUESTA; cada
+# respuesta puede implicar ajustar BOM_REF, RECEPCIONES_CKD,
+# ORDENES_PRODUCCION o los Bots de expresiones/ckd_bots.yaml.
+# ============================================================
+
+columns:
+
+  - name: ID
+    type: Number
+    key: true
+    label: false
+
+  - name: CATEGORIA
+    type: Enum
+    enum_values:
+      - "BOM / Piezas críticas"
+      - "Recepción CKD"
+      - "Orden de Producción"
+      - "Depósito / Ubicación"
+      - "Trazabilidad y calidad"
+      - "OEE / paradas de línea"
+      - "Escala / performance"
+
+  - name: PREGUNTA
+    type: LongText
+
+  - name: POR_QUE_IMPORTA
+    type: LongText
+    description: "Qué parte del diseño cambia según la respuesta"
+
+  - name: ESTADO
+    type: Enum
+    enum_values:
+      - ABIERTA
+      - RESPONDIDA
+    initial_value: "ABIERTA"
+
+  - name: RESPUESTA
+    type: LongText
+    editable: true
+    description: "Completar acá — ir cerrando de a una"
+
+data:
+  - ID: 1
+    CATEGORIA: "BOM / Piezas críticas"
+    PREGUNTA: >
+      ¿Qué se considera "pieza crítica"? ¿Lo definís vos material por
+      material, o hay ya un criterio/checklist de calidad de la empresa?
+    POR_QUE_IMPORTA: "Define cómo se completa la columna CRITICO en BOM_REF."
+    ESTADO: "ABIERTA"
+
+  - ID: 2
+    CATEGORIA: "BOM / Piezas críticas"
+    PREGUNTA: >
+      ¿Cuántas piezas distintas lleva realmente un modelo? El BOM de
+      ejemplo cargado hoy solo tiene 3-4 líneas por modelo (chasis,
+      motor, algún rodado) para poder probar el sistema.
+    POR_QUE_IMPORTA: "BOM_REF hay que completarlo con la lista real (probablemente 15-30+ ítems por modelo) antes de usarlo en producción."
+    ESTADO: "ABIERTA"
+
+  - ID: 3
+    CATEGORIA: "Recepción CKD"
+    PREGUNTA: >
+      El código de contenedor (LOTE), ¿lo asigna el proveedor en el
+      remito/ASN, o lo generan ustedes al recibirlo?
+    POR_QUE_IMPORTA: "Define si LOTE sigue siendo texto libre escaneable o necesita un generador correlativo propio."
+    ESTADO: "ABIERTA"
+
+  - ID: 4
+    CATEGORIA: "Recepción CKD"
+    PREGUNTA: >
+      ¿Un contenedor siempre trae piezas para UN solo modelo, o vienen
+      varios modelos mezclados en el mismo contenedor?
+    POR_QUE_IMPORTA: "Si es mixto, RECEPCIONES_CKD.COD_MOD (un solo modelo por recepción) no alcanza y hay que rediseñar a nivel de líneas por modelo dentro de la misma recepción."
+    ESTADO: "ABIERTA"
+
+  - ID: 5
+    CATEGORIA: "Recepción CKD"
+    PREGUNTA: >
+      Cuando el QC detecta faltantes críticos, ¿qué pasa en la
+      práctica? ¿Se rechaza todo el contenedor, se acepta con una
+      nota, se abre un reclamo al proveedor?
+    POR_QUE_IMPORTA: "Define si hace falta un estado adicional en ESTADO_QC (ej. RECHAZADO) y una vista/acción para generar el reclamo."
+    ESTADO: "ABIERTA"
+
+  - ID: 6
+    CATEGORIA: "Orden de Producción"
+    PREGUNTA: >
+      Hoy, ¿cómo se genera la Orden de Producción (OP)? ¿Manual en
+      papel/Excel, o ya existe en algún sistema?
+    POR_QUE_IMPORTA: "Define si COD_OP se sigue cargando a mano en ORDENES_PRODUCCION o conviene importarlo desde otro lado."
+    ESTADO: "ABIERTA"
+
+  - ID: 7
+    CATEGORIA: "Orden de Producción"
+    PREGUNTA: >
+      ¿Cuántas líneas de ensamble simultáneas hay en la planta?
+    POR_QUE_IMPORTA: "Si hay más de una línea, PICKING_OP necesitaría un campo LINEA_DESTINO para que el operario sepa a qué línea llevar cada kit."
+    ESTADO: "ABIERTA"
+
+  - ID: 8
+    CATEGORIA: "Depósito / Ubicación"
+    PREGUNTA: >
+      La ubicación en estantería (UBICACION en MATERIALES_REF),
+      ¿es fija por material o rota según espacio disponible?
+    POR_QUE_IMPORTA: "Si rota, un campo de texto fijo no alcanza — habría que trackear la ubicación como parte de cada movimiento en Deposito, no como un dato fijo del material."
+    ESTADO: "ABIERTA"
+
+  - ID: 9
+    CATEGORIA: "Depósito / Ubicación"
+    PREGUNTA: >
+      ¿Quién arma el kit físicamente hoy? ¿Un operario con lista
+      impresa, con tablet, o hay algún tipo de cinta/transporte
+      automático?
+    POR_QUE_IMPORTA: "Confirma si la vista 'Picking a Línea' en un celular/tablet alcanza, o si hace falta otra interfaz (ej. pantalla fija en el depósito)."
+    ESTADO: "ABIERTA"
+
+  - ID: 10
+    CATEGORIA: "Trazabilidad y calidad"
+    PREGUNTA: >
+      El material de referencia menciona trazabilidad de "qué operario
+      y qué herramienta ajustó cada pieza" — un nivel de detalle mucho
+      más fino que lo que hoy registra Producción (que solo guarda la
+      moto terminada, no cada pieza individual).
+    POR_QUE_IMPORTA: "¿Vale la pena ese nivel de detalle, o alcanza con saber qué operario cargó cada movimiento de depósito (columna RESPONSABLE, que ya existe)? Ese nivel de detalle implicaría una tabla nueva mucho más granular."
+    ESTADO: "ABIERTA"
+
+  - ID: 11
+    CATEGORIA: "OEE / paradas de línea"
+    PREGUNTA: >
+      Para las métricas OEE (tiempos de parada, cuellos de botella)
+      que menciona el material de referencia: ¿hoy miden tiempos de
+      parada de alguna forma (manual, cronómetro, otro sistema)?
+    POR_QUE_IMPORTA: "Google Sheets/AppSheets no sirve para captura en tiempo real de eventos de máquina. Si esto se necesita de verdad, probablemente requiera otra herramienta o un módulo aparte — no está incluido en este diseño."
+    ESTADO: "ABIERTA"
+
+  - ID: 12
+    CATEGORIA: "Escala / performance"
+    PREGUNTA: >
+      Con 20-100 motos/día, la tabla Deposito puede acumular miles de
+      filas al año, y las fórmulas SUM(SELECT(...)) se ponen lentas en
+      Google Sheets a partir de cierto volumen.
+    POR_QUE_IMPORTA: "¿Está bien archivar (mover a una hoja histórica) los movimientos de más de N meses, o necesitan todo el historial siempre 'vivo' para consultas? Define si hace falta un proceso de archivado periódico."
+    ESTADO: "ABIERTA"

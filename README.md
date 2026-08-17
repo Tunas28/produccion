@@ -384,6 +384,13 @@ columnas/
   DEPOSITO.yaml             — Columnas del kardex de movimientos de materia prima
   MATERIALES_REF.yaml       — Tabla de referencia de materiales y stock
 
+  BOM_REF.yaml              — [DISEÑO] Lista de materiales por modelo
+  RECEPCIONES_CKD.yaml      — [DISEÑO] Recepción de contenedores CKD
+  CHEQUEO_RECEPCION.yaml    — [DISEÑO] Validación de kit (esperado vs. recibido)
+  ORDENES_PRODUCCION.yaml   — [DISEÑO] Órdenes de producción (OP)
+  PICKING_OP.yaml           — [DISEÑO] Picking/kitting hacia la línea
+  DUDAS_PENDIENTES.yaml     — [DISEÑO] Preguntas abiertas del Sistema 3
+
 expresiones/
   formulas_calculadas.yaml  — Fórmulas IFS para auto-completar desde el chasis
   validaciones.yaml         — Valid_if para unicidad de chasis y motor
@@ -397,9 +404,14 @@ expresiones/
   deposito_slices.yaml              — Filtros de datos del depósito (incluye "mes")
   deposito_ux_vistas.yaml           — Vistas, navegación y dashboard del depósito
 
+  ckd_bots.yaml              — [DISEÑO] Automations/Bots (generar chequeo, picking, salidas)
+  ckd_validaciones.yaml      — [DISEÑO] Valid_if de BOM/Recepción/OP/Picking
+  ckd_slices_vistas.yaml     — [DISEÑO] Slices y vistas de CKD/BOM/Kitting
+
 sheets/
   setup.gs             — Script para crear las hojas de Producción
   setup_deposito.gs    — Script para crear las hojas de Depósito de Materia Prima
+  setup_ckd.gs         — [DISEÑO] Script para crear las hojas de CKD/BOM/Kitting + DUDAS_PENDIENTES
 ```
 
 ---
@@ -592,6 +604,108 @@ almacenes:
 - [Warehousing Documentation — Logistics Operational Guide](https://log.logcluster.org/en/warehousing-documentation)
 - [Raw Material Inventory Monthly Report — WPS Template](https://template.wps.com/detail/raw-material-inventory-monthly-report-xlsx-excel-inventories-2b10eff2/)
 - [Raw Material Inventory Management Excel Template — Indzara](https://indzara.com/free-excel-template-for-manufacturing-inventory-tracker/)
+
+---
+
+## Sistema 3: Recepción CKD, BOM y Kitting (DISEÑO — borrador)
+
+> ⚠ **Esto todavía es un diseño, no algo listo para usar.** Hay 12
+> preguntas abiertas (ver hoja `DUDAS_PENDIENTES`) que pueden cambiar
+> las tablas. Completar esas respuestas antes de conectar esto a
+> AppSheets en serio.
+
+### ¿Qué agrega sobre el Sistema 2 (Depósito)?
+
+El Sistema 2 ya lleva el kardex de materiales. Esto agrega tres cosas
+que describe un flujo típico de ensamble CKD (Complete Knock Down):
+
+1. **BOM (lista de materiales) por modelo** — qué materiales y en qué
+   cantidad lleva cada moto, para poder validar y armar kits.
+2. **Validación de kit al recibir un contenedor** — comparar lo
+   declarado (ASN/OP) contra lo realmente recibido, material por
+   material, y detectar faltantes críticos.
+3. **Kitting hacia la línea** — a partir de una Orden de Producción,
+   generar automáticamente la lista de picking (qué material, cuánto,
+   de qué ubicación) y registrar las salidas de depósito que genera.
+
+### Tablas nuevas
+
+| Tabla | Qué es | Se carga... |
+|---|---|---|
+| `BOM_REF` | Modelo × Material × Cantidad × Crítico | Manual (mantenimiento) |
+| `RECEPCIONES_CKD` | Un registro por contenedor/ASN recibido | Manual (form) |
+| `CHEQUEO_RECEPCION` | Detalle esperado/recibido/faltante por material | **Automático** (Bot 1, ver abajo) |
+| `ORDENES_PRODUCCION` | Encabezado de OP: modelo + cantidad a producir | Manual (form) |
+| `PICKING_OP` | Detalle de picking: requerido/preparado por material | **Automático** (Bot 3) |
+| `MATERIALES_REF` | (ya existía) ahora con columna `UBICACION` | — |
+| `DUDAS_PENDIENTES` | Las 12 preguntas de diseño abiertas | Pre-cargada, se completa `RESPUESTA` |
+
+Ver columnas completas en `columnas/BOM_REF.yaml`,
+`columnas/RECEPCIONES_CKD.yaml`, `columnas/CHEQUEO_RECEPCION.yaml`,
+`columnas/ORDENES_PRODUCCION.yaml`, `columnas/PICKING_OP.yaml` y
+`columnas/DUDAS_PENDIENTES.yaml`.
+
+### Cómo funciona el flujo
+
+```
+BOM_REF (modelo → materiales)
+   │
+   ├─► RECEPCIONES_CKD (llega un contenedor)
+   │      → Bot 1 copia el BOM del modelo × cantidad de kits
+   │        a CHEQUEO_RECEPCION
+   │      → se cargan las ENTRADAs reales en Deposito (mismo LOTE)
+   │      → CHEQUEO_RECEPCION compara esperado vs. recibido
+   │      → ESTADO_QC de la recepción se calcula solo
+   │        (PENDIENTE / OK / FALTANTES_MENORES / FALTANTES_CRITICOS)
+   │
+   └─► ORDENES_PRODUCCION (se decide armar N motos del modelo X)
+          → Bot 3 copia el BOM del modelo × cantidad a producir
+            a PICKING_OP (lista de picking, con UBICACION)
+          → el operario de depósito marca CANTIDAD_PREPARADA
+          → Bot 4 (opcional) registra las SALIDAs correspondientes
+            en Deposito automáticamente, con LOTE = COD_OP
+```
+
+Los Bots están documentados en `expresiones/ckd_bots.yaml`, junto con
+la nota de implementación (en AppSheets se arman con "Run a task on a
+set of rows" a partir de un `SELECT` sobre `BOM_REF`/`PICKING_OP`,
+usando `[_THISRECORD]` para referenciar la fila que disparó el bot).
+
+### Validaciones y vistas
+
+Ver `expresiones/ckd_validaciones.yaml` (cantidades positivas, no
+enviar una OP a línea con picking incompleto, etc.) y
+`expresiones/ckd_slices_vistas.yaml` (vistas "Registrar Recepción
+CKD", "Control de Calidad CKD", "Crear Orden de Producción",
+"Picking a Línea", "Dashboard CKD").
+
+### Setup
+
+`sheets/setup_ckd.gs` → función `crearEstructuraCKD()` crea las 6
+hojas nuevas (con `BOM_REF` de ejemplo y `DUDAS_PENDIENTES`
+pre-cargada). **Empezar por la hoja `DUDAS_PENDIENTES`** antes de
+conectar nada a AppSheets — varias respuestas cambian el diseño de
+las tablas (ver tabla de preguntas abajo).
+
+### Las 12 preguntas abiertas
+
+| # | Categoría | Pregunta (resumen) |
+|---|---|---|
+| 1 | BOM | ¿Qué se considera "pieza crítica" y quién lo define? |
+| 2 | BOM | ¿Cuántas piezas reales lleva cada modelo? (el BOM de ejemplo solo tiene 3-4) |
+| 3 | Recepción CKD | ¿El LOTE lo asigna el proveedor o se genera acá? |
+| 4 | Recepción CKD | ¿Un contenedor trae un solo modelo o varios mezclados? |
+| 5 | Recepción CKD | ¿Qué pasa en la práctica si hay faltantes críticos? |
+| 6 | Orden de Producción | ¿Cómo se genera la OP hoy (manual, otro sistema)? |
+| 7 | Orden de Producción | ¿Cuántas líneas de ensamble simultáneas hay? |
+| 8 | Depósito / Ubicación | ¿La ubicación en estantería es fija o rotativa? |
+| 9 | Depósito / Ubicación | ¿Quién arma el kit físicamente y con qué dispositivo? |
+| 10 | Trazabilidad | ¿Hace falta trazar operario+herramienta por pieza, o alcanza con RESPONSABLE por movimiento? |
+| 11 | OEE | ¿Miden hoy tiempos de parada de línea de alguna forma? |
+| 12 | Escala | ¿Se puede archivar el histórico de Deposito, o tiene que quedar todo siempre "vivo"? |
+
+Detalle completo (por qué importa cada una) en `columnas/DUDAS_PENDIENTES.yaml`
+y en la hoja `DUDAS_PENDIENTES` una vez corrido el setup.
 
 ---
 

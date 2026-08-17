@@ -1,0 +1,75 @@
+# ============================================================
+# EXPRESIONES DE VALIDACIÓN - AppSheets
+# Sistema: Recepción CKD / BOM / Kitting
+# ============================================================
+
+validaciones:
+
+  # ----------------------------------------------------------
+  # BOM_REF: no debe haber dos filas para el mismo Modelo+Material
+  # (la key ID_BOM ya lo garantiza al ser CONCATENATE, esto es
+  # solo la validación de cantidad)
+  # ----------------------------------------------------------
+  bom_cantidad_positiva:
+    columna: "CANTIDAD_POR_UNIDAD"
+    tabla: "BOM_REF"
+    tipo: "Valid_if"
+    expresion: "[CANTIDAD_POR_UNIDAD] > 0"
+    mensaje_error: "⚠ La cantidad por unidad debe ser mayor a cero."
+
+  # ----------------------------------------------------------
+  # RECEPCIONES_CKD: cantidad de kits declarada > 0
+  # ----------------------------------------------------------
+  recepcion_kits_positivos:
+    columna: "CANTIDAD_KITS_DECLARADA"
+    tabla: "RECEPCIONES_CKD"
+    tipo: "Valid_if"
+    expresion: "[CANTIDAD_KITS_DECLARADA] > 0"
+    mensaje_error: "⚠ La cantidad de kits declarada debe ser mayor a cero."
+
+  # ----------------------------------------------------------
+  # RECEPCIONES_CKD: el modelo debe tener BOM cargado (si no,
+  # el Bot no puede generar el chequeo)
+  # ----------------------------------------------------------
+  recepcion_modelo_con_bom:
+    columna: "COD_MOD"
+    tabla: "RECEPCIONES_CKD"
+    tipo: "Valid_if"
+    expresion: >
+      COUNT(SELECT(BOM_REF[ID_BOM], [COD_MOD] = [_THISROW].[COD_MOD])) > 0
+    mensaje_error: "⚠ Este modelo no tiene BOM cargado en BOM_REF. Cargar el BOM antes de registrar la recepción."
+
+  # ----------------------------------------------------------
+  # ORDENES_PRODUCCION: cantidad a producir > 0
+  # ----------------------------------------------------------
+  op_cantidad_positiva:
+    columna: "CANTIDAD_A_PRODUCIR"
+    tabla: "ORDENES_PRODUCCION"
+    tipo: "Valid_if"
+    expresion: "[CANTIDAD_A_PRODUCIR] > 0"
+    mensaje_error: "⚠ La cantidad a producir debe ser mayor a cero."
+
+  # ----------------------------------------------------------
+  # ORDENES_PRODUCCION: no pasar a ENVIADO_A_LINEA si falta
+  # preparar picking (evita que el Bot 4 dispare salidas a medias)
+  # ----------------------------------------------------------
+  op_no_enviar_incompleta:
+    columna: "ESTADO"
+    tabla: "ORDENES_PRODUCCION"
+    tipo: "Valid_if"
+    expresion: >
+      OR(
+        [ESTADO] <> "ENVIADO_A_LINEA",
+        [MATERIALES_FALTANTES_PICKING] = 0
+      )
+    mensaje_error: "⚠ Todavía hay materiales sin preparar en el picking. Completar CANTIDAD_PREPARADA antes de enviar a línea."
+
+  # ----------------------------------------------------------
+  # PICKING_OP: lo preparado no puede superar lo requerido
+  # ----------------------------------------------------------
+  picking_no_exceder_requerido:
+    columna: "CANTIDAD_PREPARADA"
+    tabla: "PICKING_OP"
+    tipo: "Valid_if"
+    expresion: "[CANTIDAD_PREPARADA] <= [CANTIDAD_REQUERIDA]"
+    mensaje_error: "⚠ La cantidad preparada no puede superar la cantidad requerida del kit."

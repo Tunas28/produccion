@@ -1,0 +1,105 @@
+# ============================================================
+# TABLA: RECEPCIONES_CKD
+# Un registro por CONTENEDOR/ASN que llega desarmado (CKD).
+# Dispara (vía Bot) la creación del detalle en CHEQUEO_RECEPCION
+# comparando lo declarado (ASN/OP × BOM) contra lo realmente
+# recibido (ENTRADAs en Deposito con el mismo LOTE).
+# ============================================================
+
+columns:
+
+  - name: LOTE
+    type: Text
+    key: true
+    label: true
+    editable: true
+    required: true
+    show: true
+    scan: true
+    description: "Código de contenedor/ASN. Debe coincidir con el LOTE usado en Deposito para las ENTRADAs de este contenedor."
+
+  - name: FECHA
+    type: Date
+    key: false
+    label: false
+    editable: true
+    required: true
+    show: true
+    initial_value: "TODAY()"
+
+  - name: COD_OP
+    type: Text
+    key: false
+    label: false
+    editable: true
+    required: false
+    show: true
+    description: "Orden de Producción asociada (referencia externa/manual — ver ORDENES_PRODUCCION)"
+
+  - name: COD_MOD
+    type: Ref
+    ref_table: MODELOS_REF
+    key: false
+    label: false
+    editable: true
+    required: true
+    show: true
+    description: "Modelo que arma este contenedor (define qué BOM aplicar)"
+
+  - name: CANTIDAD_KITS_DECLARADA
+    type: Number
+    key: false
+    label: false
+    editable: true
+    required: true
+    show: true
+    valid_if: "[CANTIDAD_KITS_DECLARADA] > 0"
+    description: "Cantidad de motos que se arman con este contenedor, según el ASN/OP"
+
+  - name: RESPONSABLE_QC
+    type: Text
+    key: false
+    label: false
+    editable: true
+    required: false
+    show: true
+
+  - name: OBS
+    type: LongText
+    key: false
+    label: false
+    editable: true
+    required: false
+    show: true
+
+  # ──────────────────────────────────────────────────────────
+  # COLUMNAS VIRTUALES — estado de QC derivado de CHEQUEO_RECEPCION
+  # ──────────────────────────────────────────────────────────
+
+  - name: ESTADO_QC
+    type: Text
+    key: false
+    label: false
+    editable: false
+    show: true
+    formula: >
+      IFS(
+        COUNT(SELECT(CHEQUEO_RECEPCION[ID_CHEQUEO], [LOTE] = [_THISROW].[LOTE])) = 0, "PENDIENTE",
+        COUNT(SELECT(CHEQUEO_RECEPCION[ID_CHEQUEO], AND([LOTE] = [_THISROW].[LOTE], [CRITICO] = TRUE, [FALTANTE] > 0))) > 0, "FALTANTES_CRITICOS",
+        COUNT(SELECT(CHEQUEO_RECEPCION[ID_CHEQUEO], AND([LOTE] = [_THISROW].[LOTE], [FALTANTE] > 0))) > 0, "FALTANTES_MENORES",
+        TRUE, "OK"
+      )
+    description: >
+      PENDIENTE = el Bot todavía no generó el detalle en CHEQUEO_RECEPCION.
+      FALTANTES_CRITICOS = falta al menos una pieza marcada CRITICO=TRUE.
+      FALTANTES_MENORES = falta stock no crítico.
+      OK = todo lo declarado por BOM × CANTIDAD_KITS_DECLARADA fue recibido.
+
+  - name: PIEZAS_FALTANTES
+    type: Number
+    key: false
+    label: false
+    editable: false
+    show: true
+    formula: >
+      COUNT(SELECT(CHEQUEO_RECEPCION[ID_CHEQUEO], AND([LOTE] = [_THISROW].[LOTE], [FALTANTE] > 0)))

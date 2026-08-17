@@ -1,0 +1,77 @@
+# ============================================================
+# TABLA: PICKING_OP
+# Detalle de kitting: una fila por (COD_OP × COD_MATERIAL).
+# NO se carga a mano — la genera un Bot al crear una fila en
+# ORDENES_PRODUCCION (ver expresiones/ckd_bots.yaml, Bot 3),
+# copiando el BOM del modelo × cantidad a producir.
+# El operario de depósito la usa como lista de picking: qué
+# material, cuánto y de qué ubicación sacar para armar el kit.
+# ============================================================
+
+columns:
+
+  - name: ID_PICKING
+    type: Text
+    key: true
+    label: false
+    editable: false
+    show: false
+    formula: "CONCATENATE([COD_OP], \"-\", [COD_MATERIAL])"
+
+  - name: COD_OP
+    type: Ref
+    ref_table: ORDENES_PRODUCCION
+    key: false
+    label: true
+    editable: true
+    required: true
+    show: true
+
+  - name: COD_MATERIAL
+    type: Ref
+    ref_table: MATERIALES_REF
+    key: false
+    label: true
+    editable: true
+    required: true
+    show: true
+
+  - name: CANTIDAD_REQUERIDA
+    type: Number
+    key: false
+    label: false
+    editable: true
+    required: true
+    show: true
+    description: "Seteado por el Bot = BOM_REF[CANTIDAD_POR_UNIDAD] × ORDENES_PRODUCCION[CANTIDAD_A_PRODUCIR]"
+
+  - name: CANTIDAD_PREPARADA
+    type: Number
+    key: false
+    label: false
+    editable: true
+    required: false
+    show: true
+    initial_value: "0"
+    description: "El operario de depósito va marcando cuánto juntó físicamente del kit"
+
+  # ──────────────────────────────────────────────────────────
+  # COLUMNAS VIRTUALES
+  # ──────────────────────────────────────────────────────────
+
+  - name: UBICACION
+    type: Text
+    key: false
+    label: false
+    editable: false
+    show: true
+    formula: "LOOKUP([COD_MATERIAL], \"MATERIALES_REF\", \"COD_MATERIAL\", \"UBICACION\")"
+    description: "De dónde sacar el material — guía al operario en el picking físico"
+
+  - name: COMPLETO
+    type: Yes/No
+    key: false
+    label: false
+    editable: false
+    show: true
+    formula: "[CANTIDAD_PREPARADA] >= [CANTIDAD_REQUERIDA]"

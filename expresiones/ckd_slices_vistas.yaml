@@ -1,0 +1,135 @@
+# ============================================================
+# SLICES Y VISTAS - AppSheets
+# Sistema: Recepción CKD / BOM / Kitting
+# ============================================================
+
+slices:
+
+  - name: Recepciones_Pendientes_QC
+    tabla: RECEPCIONES_CKD
+    filter: "[ESTADO_QC] = \"PENDIENTE\""
+    descripcion: "Recepciones cuyo Bot todavía no generó (o no terminó de generar) el chequeo"
+
+  - name: Recepciones_Con_Faltantes_Criticos
+    tabla: RECEPCIONES_CKD
+    filter: "[ESTADO_QC] = \"FALTANTES_CRITICOS\""
+    descripcion: "Contenedores que NO deberían liberarse a producción — les falta una pieza crítica"
+
+  - name: Chequeo_Con_Faltante
+    tabla: CHEQUEO_RECEPCION
+    filter: "[FALTANTE] > 0"
+    descripcion: "Líneas de chequeo con diferencia entre lo esperado y lo recibido"
+
+  - name: OP_Pendientes_Picking
+    tabla: ORDENES_PRODUCCION
+    filter: "IN([ESTADO], {\"PENDIENTE\", \"EN_PREPARACION\"})"
+    descripcion: "Órdenes cuyo kit todavía se está armando en depósito"
+
+  - name: Picking_Incompleto
+    tabla: PICKING_OP
+    filter: "[COMPLETO] = FALSE"
+    descripcion: "Líneas de picking que el operario todavía no terminó de juntar"
+
+vistas:
+
+  # ──────────────────────────────────────────────────────────
+  # Registrar Recepción CKD (Form)
+  # ──────────────────────────────────────────────────────────
+  - name: Registrar Recepción CKD
+    tipo: Form
+    tabla: RECEPCIONES_CKD
+    icono: local_shipping
+    descripcion: >
+      El operario escanea el código del contenedor (LOTE), indica
+      modelo, cantidad de kits (según ASN/OP) y guarda. Después
+      carga las ENTRADAs reales en "Registrar Movimiento" con el
+      mismo LOTE; el Bot compara automáticamente.
+
+  # ──────────────────────────────────────────────────────────
+  # Control de Calidad CKD (Table + Detail)
+  # ──────────────────────────────────────────────────────────
+  - name: Control de Calidad CKD
+    tipo: Table
+    tabla: RECEPCIONES_CKD
+    icono: fact_check
+    sort_by:
+      - columna: FECHA
+        orden: Descending
+    columnas_visibles:
+      - LOTE
+      - FECHA
+      - COD_MOD
+      - CANTIDAD_KITS_DECLARADA
+      - ESTADO_QC
+      - PIEZAS_FALTANTES
+    formato_condicional:
+      - columna: ESTADO_QC
+        condicion: "[ESTADO_QC] = \"FALTANTES_CRITICOS\""
+        color_fondo: "#FFCDD2"
+      - columna: ESTADO_QC
+        condicion: "[ESTADO_QC] = \"OK\""
+        color_fondo: "#C8E6C9"
+    descripcion: >
+      Al tocar una recepción se abre el detalle con la lista de
+      CHEQUEO_RECEPCION relacionada (esperado / recibido / faltante
+      / crítico por material), vía la referencia inversa de LOTE.
+
+  # ──────────────────────────────────────────────────────────
+  # Crear Orden de Producción (Form)
+  # ──────────────────────────────────────────────────────────
+  - name: Crear Orden de Producción
+    tipo: Form
+    tabla: ORDENES_PRODUCCION
+    icono: assignment
+    descripcion: "Define modelo y cantidad a producir. El Bot genera el picking list en PICKING_OP."
+
+  # ──────────────────────────────────────────────────────────
+  # Picking / Kitting (Table)
+  # ──────────────────────────────────────────────────────────
+  - name: Picking a Línea
+    tipo: Table
+    slice: Picking_Incompleto
+    icono: shopping_basket
+    sort_by:
+      - columna: COD_OP
+        orden: Ascending
+    columnas_visibles:
+      - COD_OP
+      - COD_MATERIAL
+      - UBICACION
+      - CANTIDAD_REQUERIDA
+      - CANTIDAD_PREPARADA
+      - COMPLETO
+    descripcion: >
+      Lista de picking para el operario de depósito: qué material,
+      cuánto y de qué ubicación sacar para completar el kit de cada
+      OP. Va marcando CANTIDAD_PREPARADA a medida que junta piezas.
+
+  # ──────────────────────────────────────────────────────────
+  # Dashboard CKD
+  # ──────────────────────────────────────────────────────────
+  - name: Dashboard CKD
+    tipo: Dashboard
+    icono: dashboard
+    paneles:
+      - tipo: card_kpi
+        nombre: "Recepciones con faltantes críticos"
+        formula: "COUNT(Recepciones_Con_Faltantes_Criticos[LOTE])"
+        color: "#D32F2F"
+
+      - tipo: card_kpi
+        nombre: "OPs pendientes de picking"
+        formula: "COUNT(OP_Pendientes_Picking[COD_OP])"
+        color: "#F57C00"
+
+      - tipo: card_kpi
+        nombre: "Líneas de picking incompletas"
+        formula: "COUNT(Picking_Incompleto[ID_PICKING])"
+        color: "#7B1FA2"
+
+      - tipo: Bar Chart
+        nombre: "Faltantes por Material (recepciones abiertas)"
+        slice: Chequeo_Con_Faltante
+        eje_x: COD_MATERIAL
+        eje_y: FALTANTE
+        orientacion: horizontal

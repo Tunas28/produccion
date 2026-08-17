@@ -1,0 +1,126 @@
+# ============================================================
+# BOTS (Automation) - AppSheets
+# Configurar en: Automation → Bots
+# Sistema: Recepción CKD / BOM / Kitting
+# ============================================================
+
+bots:
+
+  # ──────────────────────────────────────────────────────────
+  # BOT 1: Generar el detalle de chequeo al registrar una recepción
+  # ──────────────────────────────────────────────────────────
+  - id: bot_generar_chequeo_recepcion
+    nombre: "Generar Chequeo de Recepción CKD"
+    evento: "Data change → RECEPCIONES_CKD → Adds"
+    condicion: "TRUE"
+    descripcion: >
+      Cuando se agrega una fila en RECEPCIONES_CKD, recorre BOM_REF
+      filtrado por el COD_MOD de esa recepción y crea una fila en
+      CHEQUEO_RECEPCION por cada material del BOM, con
+      CANTIDAD_ESPERADA = CANTIDAD_POR_UNIDAD × CANTIDAD_KITS_DECLARADA.
+    pasos:
+      - accion: "Run a task on a set of rows"
+        lista_origen: >
+          SELECT(BOM_REF[ID_BOM], [COD_MOD] = [_THISRECORD].[COD_MOD])
+        tarea:
+          tipo: "Add row to CHEQUEO_RECEPCION"
+          valores:
+            LOTE: "[_THISRECORD].[LOTE]"
+            COD_MATERIAL: >
+              LOOKUP([_THISROW], "BOM_REF", "ID_BOM", "COD_MATERIAL")
+            CANTIDAD_ESPERADA: >
+              LOOKUP([_THISROW], "BOM_REF", "ID_BOM", "CANTIDAD_POR_UNIDAD")
+              * [_THISRECORD].[CANTIDAD_KITS_DECLARADA]
+    nota_implementacion: >
+      En el editor de Bots de AppSheets esto se arma con una acción
+      "Referenced rows" o "For each item in <lista>" apuntando a
+      SELECT(BOM_REF[ID_BOM], [COD_MOD] = [_THISRECORD].[COD_MOD]),
+      y dentro un "Run a task on a set of rows" → "Add records to
+      another table using values from this row" (CHEQUEO_RECEPCION).
+      Es el patrón estándar de AppSheets para "copiar líneas de una
+      plantilla (BOM) a un documento (recepción)", igual que una
+      orden de compra que copia líneas desde un catálogo.
+
+  # ──────────────────────────────────────────────────────────
+  # BOT 2 (opcional): Alertar cuando una recepción queda con
+  # faltantes críticos
+  # ──────────────────────────────────────────────────────────
+  - id: bot_alerta_faltantes_criticos
+    nombre: "Alertar Faltantes Críticos en Recepción"
+    evento: "Data change → RECEPCIONES_CKD → Updates (ESTADO_QC)"
+    condicion: >
+      AND(
+        [ESTADO_QC] = "FALTANTES_CRITICOS",
+        [_THISROW_BEFORE].[ESTADO_QC] <> "FALTANTES_CRITICOS"
+      )
+    descripcion: >
+      Envía una notificación push/email al responsable de depósito
+      cuando una recepción pasa a tener piezas críticas faltantes.
+    pasos:
+      - accion: "Send a notification"
+        destinatario: "[RESPONSABLE_QC]"
+        mensaje: >
+          CONCATENATE("⚠ Recepción ", [LOTE], " (", [COD_MOD], ") tiene ",
+          [PIEZAS_FALTANTES], " pieza(s) faltante(s), incluyendo críticas.")
+
+  # ──────────────────────────────────────────────────────────
+  # BOT 3 (opcional): Generar picking al crear una Orden de Producción
+  # ──────────────────────────────────────────────────────────
+  - id: bot_generar_picking_op
+    nombre: "Generar Picking List al crear OP"
+    evento: "Data change → ORDENES_PRODUCCION → Adds"
+    condicion: "TRUE"
+    descripcion: >
+      Mismo patrón que el Bot 1, pero para kitting hacia línea: copia
+      BOM_REF del modelo de la OP a PICKING_OP, con
+      CANTIDAD_REQUERIDA = CANTIDAD_POR_UNIDAD × CANTIDAD_A_PRODUCIR.
+    pasos:
+      - accion: "Run a task on a set of rows"
+        lista_origen: >
+          SELECT(BOM_REF[ID_BOM], [COD_MOD] = [_THISRECORD].[COD_MOD])
+        tarea:
+          tipo: "Add row to PICKING_OP"
+          valores:
+            COD_OP: "[_THISRECORD].[COD_OP]"
+            COD_MATERIAL: >
+              LOOKUP([_THISROW], "BOM_REF", "ID_BOM", "COD_MATERIAL")
+            CANTIDAD_REQUERIDA: >
+              LOOKUP([_THISROW], "BOM_REF", "ID_BOM", "CANTIDAD_POR_UNIDAD")
+              * [_THISRECORD].[CANTIDAD_A_PRODUCIR]
+
+  # ──────────────────────────────────────────────────────────
+  # BOT 4 (opcional): Registrar las SALIDAs en Deposito cuando
+  # el picking de una OP se envía a línea
+  # ──────────────────────────────────────────────────────────
+  - id: bot_registrar_salidas_picking
+    nombre: "Registrar Salidas de Depósito al Enviar Kit a Línea"
+    evento: "Data change → ORDENES_PRODUCCION → Updates (ESTADO)"
+    condicion: >
+      AND(
+        [ESTADO] = "ENVIADO_A_LINEA",
+        [_THISROW_BEFORE].[ESTADO] <> "ENVIADO_A_LINEA"
+      )
+    descripcion: >
+      Cuando una OP pasa a ENVIADO_A_LINEA, recorre PICKING_OP de esa
+      OP y crea una fila SALIDA en Deposito por cada material, usando
+      CANTIDAD_PREPARADA (lo que realmente se sacó, no lo requerido).
+      Así el kardex de Deposito queda sincronizado sin doble carga
+      manual, y el LOTE de la SALIDA es el propio COD_OP (trazabilidad
+      hacia qué orden consumió ese material).
+    pasos:
+      - accion: "Run a task on a set of rows"
+        lista_origen: >
+          SELECT(PICKING_OP[ID_PICKING], AND([COD_OP] = [_THISRECORD].[COD_OP], [CANTIDAD_PREPARADA] > 0))
+        tarea:
+          tipo: "Add row to Deposito"
+          valores:
+            COD_MATERIAL: >
+              LOOKUP([_THISROW], "PICKING_OP", "ID_PICKING", "COD_MATERIAL")
+            TIPO_MOVIMIENTO: "SALIDA"
+            CANTIDAD: >
+              LOOKUP([_THISROW], "PICKING_OP", "ID_PICKING", "CANTIDAD_PREPARADA")
+            LOTE: "[_THISRECORD].[COD_OP]"
+            PROVEEDOR_DESTINO: "Línea de producción"
+    nota_implementacion: >
+      Al activar este bot, dejar de registrar estas SALIDAs a mano
+      desde "Registrar Movimiento" para evitar duplicarlas.

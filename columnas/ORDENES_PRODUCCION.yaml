@@ -1,0 +1,82 @@
+# ============================================================
+# TABLA: ORDENES_PRODUCCION (OP)
+# Encabezado de una orden: "armar N motos del modelo X".
+# Dispara (vía Bot) el picking list en PICKING_OP — el "kitting"
+# que le dice al depósito exactamente qué bajar a línea.
+# ============================================================
+
+columns:
+
+  - name: COD_OP
+    type: Text
+    key: true
+    label: true
+    editable: true
+    required: true
+    show: true
+    description: "Código de la orden de producción (manual, ej. OP-2026-0817-01)"
+
+  - name: FECHA
+    type: Date
+    key: false
+    label: false
+    editable: true
+    required: true
+    show: true
+    initial_value: "TODAY()"
+
+  - name: COD_MOD
+    type: Ref
+    ref_table: MODELOS_REF
+    key: false
+    label: false
+    editable: true
+    required: true
+    show: true
+
+  - name: CANTIDAD_A_PRODUCIR
+    type: Number
+    key: false
+    label: false
+    editable: true
+    required: true
+    show: true
+    valid_if: "[CANTIDAD_A_PRODUCIR] > 0"
+
+  - name: ESTADO
+    type: Enum
+    key: false
+    label: false
+    editable: true
+    required: true
+    show: true
+    enum_values:
+      - PENDIENTE
+      - EN_PREPARACION
+      - ENVIADO_A_LINEA
+      - COMPLETADO
+    initial_value: "PENDIENTE"
+
+  - name: OBS
+    type: LongText
+    key: false
+    label: false
+    editable: true
+    required: false
+    show: true
+
+  # ──────────────────────────────────────────────────────────
+  # COLUMNAS VIRTUALES — progreso del picking (kitting)
+  # ──────────────────────────────────────────────────────────
+
+  - name: MATERIALES_FALTANTES_PICKING
+    type: Number
+    key: false
+    label: false
+    editable: false
+    show: true
+    formula: >
+      COUNT(SELECT(PICKING_OP[ID_PICKING],
+        AND([COD_OP] = [_THISROW].[COD_OP], [CANTIDAD_PREPARADA] < [CANTIDAD_REQUERIDA])
+      ))
+    description: "Cuántos materiales del kit todavía no están completos para esta OP"

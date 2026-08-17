@@ -1,0 +1,89 @@
+# ============================================================
+# TABLA: CHEQUEO_RECEPCION
+# Detalle de validación de kit: una fila por (LOTE × COD_MATERIAL).
+# NO se carga a mano — la genera un Bot de AppSheets al crear una
+# fila en RECEPCIONES_CKD (ver expresiones/ckd_bots.yaml), copiando
+# el BOM del modelo declarado y multiplicando por la cantidad de kits.
+# ============================================================
+
+columns:
+
+  - name: ID_CHEQUEO
+    type: Text
+    key: true
+    label: false
+    editable: false
+    show: false
+    formula: "CONCATENATE([LOTE], \"-\", [COD_MATERIAL])"
+
+  - name: LOTE
+    type: Ref
+    ref_table: RECEPCIONES_CKD
+    key: false
+    label: true
+    editable: true
+    required: true
+    show: true
+    description: "Seteado por el Bot al crear la recepción"
+
+  - name: COD_MATERIAL
+    type: Ref
+    ref_table: MATERIALES_REF
+    key: false
+    label: true
+    editable: true
+    required: true
+    show: true
+    description: "Seteado por el Bot, uno por cada línea del BOM del modelo"
+
+  - name: CANTIDAD_ESPERADA
+    type: Number
+    key: false
+    label: false
+    editable: true
+    required: true
+    show: true
+    description: >
+      Seteado por el Bot = BOM_REF[CANTIDAD_POR_UNIDAD] × RECEPCIONES_CKD[CANTIDAD_KITS_DECLARADA].
+      Queda editable por si el operario necesita corregirlo manualmente (ej. ASN parcial).
+
+  # ──────────────────────────────────────────────────────────
+  # COLUMNAS VIRTUALES
+  # ──────────────────────────────────────────────────────────
+
+  - name: CANTIDAD_RECIBIDA
+    type: Number
+    key: false
+    label: false
+    editable: false
+    show: true
+    formula: >
+      SUM(SELECT(Deposito[CANTIDAD],
+        AND(
+          [LOTE] = [_THISROW].[LOTE],
+          [COD_MATERIAL] = [_THISROW].[COD_MATERIAL],
+          [TIPO_MOVIMIENTO] = "ENTRADA"
+        )
+      ))
+    description: "Suma de ENTRADAs en Deposito con el mismo LOTE y material"
+
+  - name: FALTANTE
+    type: Number
+    key: false
+    label: false
+    editable: false
+    show: true
+    formula: "MAX(0, [CANTIDAD_ESPERADA] - [CANTIDAD_RECIBIDA])"
+
+  - name: CRITICO
+    type: Yes/No
+    key: false
+    label: false
+    editable: false
+    show: true
+    formula: >
+      LOOKUP(
+        CONCATENATE([LOTE].[COD_MOD], "-", [COD_MATERIAL]),
+        "BOM_REF", "ID_BOM", "CRITICO"
+      )
+    description: "Dereferencia LOTE → RECEPCIONES_CKD.COD_MOD para ir a buscar el BOM del modelo"
