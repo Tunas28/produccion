@@ -84,3 +84,67 @@ formulas_materiales_ref:
     editable: false
     formula: |
       [STOCK_ACTUAL] < [STOCK_MINIMO]
+
+  # ----------------------------------------------------------
+  # "REPORTE MENSUAL" — formato estándar de depósito
+  # (Bin Card / Monthly Stock Report): Saldo Inicial, Entradas,
+  # Salidas, Ajustes y Saldo Final del mes en curso.
+  # ----------------------------------------------------------
+
+  SALDO_INICIAL_MES:
+    tipo: App formula
+    resultado_tipo: Number
+    editable: false
+    formula: |
+      SUM(SELECT(Deposito[EFECTO_STOCK],
+        AND(
+          [COD_MATERIAL] = [_THISROW].[COD_MATERIAL],
+          [FECHA] < STARTOFMONTH(TODAY())
+        )
+      ))
+
+  ENTRADAS_MES:
+    tipo: App formula
+    resultado_tipo: Number
+    editable: false
+    formula: |
+      SUM(SELECT(Deposito[CANTIDAD],
+        AND(
+          [COD_MATERIAL] = [_THISROW].[COD_MATERIAL],
+          [ES_ESTE_MES] = TRUE,
+          [TIPO_MOVIMIENTO] = "ENTRADA"
+        )
+      ))
+
+  SALIDAS_MES:
+    tipo: App formula
+    resultado_tipo: Number
+    editable: false
+    formula: |
+      SUM(SELECT(Deposito[CANTIDAD],
+        AND(
+          [COD_MATERIAL] = [_THISROW].[COD_MATERIAL],
+          [ES_ESTE_MES] = TRUE,
+          [TIPO_MOVIMIENTO] = "SALIDA"
+        )
+      ))
+
+  AJUSTES_MES:
+    tipo: App formula
+    resultado_tipo: Number
+    editable: false
+    formula: |
+      SUM(SELECT(Deposito[EFECTO_STOCK],
+        AND(
+          [COD_MATERIAL] = [_THISROW].[COD_MATERIAL],
+          [ES_ESTE_MES] = TRUE,
+          IN([TIPO_MOVIMIENTO], {"COMPLETO", "INCOMPLETO", "INTERVENIDO", "RECLAMADO"})
+        )
+      ))
+
+  SALDO_FINAL_MES:
+    tipo: App formula
+    resultado_tipo: Number
+    editable: false
+    formula: |
+      [SALDO_INICIAL_MES] + [ENTRADAS_MES] - [SALIDAS_MES] + [AJUSTES_MES]

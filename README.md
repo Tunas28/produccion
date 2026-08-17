@@ -522,6 +522,30 @@ SUM(SELECT(Deposito[EFECTO_STOCK], [COD_MATERIAL] = [_THISROW].[COD_MATERIAL]))
 
 **BAJO_MINIMO:** `[STOCK_ACTUAL] < [STOCK_MINIMO]`
 
+### "Reporte Mensual" — formato estándar de depósito (Saldo Inicial → Final)
+
+Además del stock corriente (`STOCK_ACTUAL`), `MATERIALES_REF` calcula el
+reporte clásico de almacén — el mismo formato que usan las plantillas de
+**Bin Card / Stock Card** y **Monthly Stock Report** de logística (ver
+Fuentes al pie): una fila por material con Saldo Inicial, Entradas, Salidas,
+Ajustes y Saldo Final del mes en curso.
+
+**SALDO_INICIAL_MES** (stock acumulado hasta el cierre del mes anterior):
+```
+SUM(SELECT(Deposito[EFECTO_STOCK],
+  AND([COD_MATERIAL] = [_THISROW].[COD_MATERIAL], [FECHA] < STARTOFMONTH(TODAY()))
+))
+```
+
+**ENTRADAS_MES** / **SALIDAS_MES** (suman `CANTIDAD` del mes actual filtrando
+por `TIPO_MOVIMIENTO`), **AJUSTES_MES** (efecto neto de
+COMPLETO/INCOMPLETO/INTERVENIDO/RECLAMADO del mes) y:
+
+**SALDO_FINAL_MES:** `[SALDO_INICIAL_MES] + [ENTRADAS_MES] - [SALIDAS_MES] + [AJUSTES_MES]`
+
+Esto se ve en la vista **Reporte Mensual**: `MATERIAL | SALDO_INICIAL_MES |
+ENTRADAS_MES | SALIDAS_MES | AJUSTES_MES | SALDO_FINAL_MES`.
+
 ### Validaciones (Valid_if)
 
 - **COD_MATERIAL:** `IN([COD_MATERIAL], MATERIALES_REF[COD_MATERIAL])` — el material debe existir.
@@ -537,8 +561,8 @@ Ver `expresiones/deposito_slices.yaml`, `expresiones/deposito_kpis.yaml` y
 slice `Deposito_Este_Mes` (el "mes de depósito"), slices por tipo de
 movimiento del mes, KPIs de entradas/salidas/incompletos/intervenidos/
 reclamados del mes, gráfico de stock actual por material, y las vistas
-"Registrar Movimiento", "Stock Actual", "Buscar", "Dashboard Depósito" e
-"Historial Depósito".
+"Registrar Movimiento", "Stock Actual", "Reporte Mensual", "Buscar",
+"Dashboard Depósito" e "Historial Depósito".
 
 ### Prueba rápida
 
@@ -549,9 +573,25 @@ reclamados del mes, gráfico de stock actual por material, y las vistas
 4. Registrar una SALIDA de 10 unidades de `CH01`.
 5. Verificar que `STOCK_ACTUAL` bajó a 40 y que el KPI "Salidas del mes"
    del Dashboard muestra 10.
-6. Registrar una entrada baja (por ejemplo `STOCK_MINIMO = 20` y llevar el
+6. Ver la vista **Reporte Mensual**: `CH01` debe mostrar
+   `SALDO_INICIAL_MES = 0`, `ENTRADAS_MES = 50`, `SALIDAS_MES = 10`,
+   `SALDO_FINAL_MES = 40`.
+7. Registrar una entrada baja (por ejemplo `STOCK_MINIMO = 20` y llevar el
    stock por debajo) y verificar que el material aparece resaltado en
    **Stock Actual** y sumado en el KPI "Materiales bajo mínimo".
+
+### Referencia — formato estándar de depósito usado como base
+
+El diseño (kardex por movimiento + reporte mensual por material con Saldo
+Inicial/Entradas/Salidas/Saldo Final) sigue el formato estándar de **Bin
+Card / Stock Card** y **Monthly Stock Report** que se usa en logística de
+almacenes:
+
+- [Warehouse Stock Card](https://www.allbusinesstemplates.com/template/Q6OZ5/warehouse-stock-card/)
+- [Bin Card Format Excel](https://www.allbusinesstemplates.com/template/QA48R/bin-card-format-excel/)
+- [Warehousing Documentation — Logistics Operational Guide](https://log.logcluster.org/en/warehousing-documentation)
+- [Raw Material Inventory Monthly Report — WPS Template](https://template.wps.com/detail/raw-material-inventory-monthly-report-xlsx-excel-inventories-2b10eff2/)
+- [Raw Material Inventory Management Excel Template — Indzara](https://indzara.com/free-excel-template-for-manufacturing-inventory-tracker/)
 
 ---
 

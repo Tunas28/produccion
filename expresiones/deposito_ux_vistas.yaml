@@ -5,7 +5,7 @@
 # ============================================================
 
 # Orden de navegación recomendado (barra inferior de la app):
-# [ Registrar Mov. ] [ Stock Actual ] [ Buscar ] [ Dashboard ] [ Historial ]
+# [ Registrar Mov. ] [ Stock Actual ] [ Reporte Mensual ] [ Buscar ] [ Dashboard ] [ Historial ]
 
 vistas:
 
@@ -70,12 +70,41 @@ vistas:
       CONCATENATE("Bajo mínimo: ", COUNTIF(MATERIALES_REF[BAJO_MINIMO], TRUE))
 
   # ──────────────────────────────────────────────────────────
-  # 3. BUSCAR (verificar material, lote o movimiento existente)
+  # 3. REPORTE MENSUAL — formato estándar de depósito
+  # (Bin Card / Monthly Stock Report): Saldo Inicial, Entradas,
+  # Salidas, Ajustes y Saldo Final del mes en curso, por material.
+  # Es la respuesta directa a "el mes de depósito".
+  # ──────────────────────────────────────────────────────────
+  - name: Reporte Mensual
+    tipo: Table
+    tabla: MATERIALES_REF
+    posicion_nav: 3
+    icono: summarize
+    sort_by:
+      - columna: MATERIAL
+        orden: Ascending
+    columnas_visibles:
+      - MATERIAL
+      - UNIDAD
+      - SALDO_INICIAL_MES
+      - ENTRADAS_MES
+      - SALIDAS_MES
+      - AJUSTES_MES
+      - SALDO_FINAL_MES
+    header_formula: >
+      CONCATENATE("Reporte de ", TEXT(TODAY(), "MMM YYYY"))
+    descripcion: >
+      Una fila por material con el resumen del mes actual:
+      Saldo Inicial (al cierre del mes anterior) + Entradas − Salidas
+      + Ajustes (completo/incompleto/intervenido/reclamado) = Saldo Final.
+
+  # ──────────────────────────────────────────────────────────
+  # 4. BUSCAR (verificar material, lote o movimiento existente)
   # ──────────────────────────────────────────────────────────
   - name: Buscar
     tipo: Table
     slice: Deposito_Todo
-    posicion_nav: 3
+    posicion_nav: 4
     icono: search
     search_columns:
       - COD_MATERIAL
@@ -89,11 +118,11 @@ vistas:
       - LOTE
 
   # ──────────────────────────────────────────────────────────
-  # 4. DASHBOARD (supervisor / gerencia)
+  # 5. DASHBOARD (supervisor / gerencia)
   # ──────────────────────────────────────────────────────────
   - name: Dashboard Depósito
     tipo: Dashboard
-    posicion_nav: 4
+    posicion_nav: 5
     icono: dashboard
     paneles:
 
@@ -168,12 +197,12 @@ vistas:
         series: TIPO_MOVIMIENTO
 
   # ──────────────────────────────────────────────────────────
-  # 5. HISTORIAL COMPLETO
+  # 6. HISTORIAL COMPLETO
   # ──────────────────────────────────────────────────────────
   - name: Historial Depósito
     tipo: Table
     slice: Deposito_Todo
-    posicion_nav: 5
+    posicion_nav: 6
     icono: history
     sort_by:
       - columna: FECHA
@@ -191,7 +220,7 @@ vistas:
       - PROVEEDOR_DESTINO
 
   # ──────────────────────────────────────────────────────────
-  # 6. DETALLE (al tocar un registro en cualquier vista)
+  # 7. DETALLE (al tocar un registro en cualquier vista)
   # ──────────────────────────────────────────────────────────
   - name: Detalle Movimiento
     tipo: Detail
